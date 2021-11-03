@@ -3,27 +3,33 @@ import mediapipe as mp
 import numpy as np
 from tensorflow.keras.models import load_model
 import math
+from PIL import ImageFont, ImageDraw, Image
 
 # ------------------- 모델 ------------------- #
 
 ## m1 방향에 따라 분류(손바닥 위)
-actions_m1 = ['a','ae','ya','yae','i']
+# actions_m1 = ['a','ae','ya','yae','i']
+actions_m1 = ['ㅏ','ㅐ','ㅑ','ㅙ','ㅣ']
 model_m1 = load_model('models/M/model_m1.h5')
 
 ## m2 방향에 따라 분류(손등 위)
-actions_m2 = ['o','oe','yo']
+# actions_m2 = ['o','oe','yo']
+actions_m2 = ['ㅗ','ㅚ','ㅛ']
 model_m2 = load_model('models/M/model_m2.h5')
 
 ## m3 방향에 따라 분류(아래)
-actions_m3 = ['u','wi','yu']
+# actions_m3 = ['u','wi','yu']
+actions_m3 = ['ㅜ','ㅟ','ㅠ']
 model_m3 = load_model('models/M/model_m3.h5')
 
 ## m4 방향에 따라 분류 (앞)
-actions_m4 = ['eo','e','yeo','ye']
+# actions_m4 = ['eo','e','yeo','ye']
+actions_m4 = ['ㅓ','ㅔ','ㅕ','ㅖ']
 model_m4 = load_model('models/M/model_m4.h5')
 
 ## m5 방향에 따라 분류 (옆)
-actions_m5 = ['eu', 'ui']  
+# actions_m5 = ['eu', 'ui']  
+actions_m5 = ['ㅡ', 'ㅢ']  
 model_m5 = load_model('models/M/model_m5.h5')
 
 
@@ -191,8 +197,18 @@ while cap.isOpened():
     # Display Probability
     cv2.putText(img, 'OUTPUT'
                 , (15,18), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
-    cv2.putText(img, f'{this_action.upper()}'
-                , (15,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+    # cv2.putText(img, f'{this_action.upper()}'
+    #             , (15,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+
+    # 한글 적용
+    b,g,r,a = 255,255,255,0
+    # fontpath = "fonts/gulim.ttc" # 30, (30, 25)
+    fontpath = "fonts/KoPubWorld Dotum Bold.ttf"
+    img_pil = Image.fromarray(img)
+    font = ImageFont.truetype(fontpath, 35)
+    draw = ImageDraw.Draw(img_pil)
+    draw.text((30, 15), f'{this_action}', font=font, fill=(b,g,r,a))
+    img = np.array(img_pil)
 
     # Display Probability
     cv2.putText(img, 'MODEL'

@@ -3,7 +3,7 @@ import mediapipe as mp
 import numpy as np
 from tensorflow.keras.models import load_model
 from pynput.keyboard import Key, Controller
-
+from PIL import ImageFont, ImageDraw, Image
 
 kbControl = Controller()
 
@@ -11,19 +11,23 @@ kbControl = Controller()
 # ------------------- 모델 ------------------- #
 
 ## j1
-actions_j1 = ["giyeok", "shiot", "jieut", "ch'ieuch'", "k'ieuk'"] 
+# actions_j1 = ["giyeok", "shiot", "jieut", "ch'ieuch'", "k'ieuk'"] 
+actions_j1 = ["ㄱ", "ㅅ", "ㅈ", "ㅊ", "ㅋ"] 
 model_j1 = load_model('models/J/model_j1.h5')
 
 ## j2
-actions_j2 = ["nieun", "digeut", "rieul", "t'ieut'"]
+# actions_j2 = ["nieun", "digeut", "rieul", "t'ieut'"]
+actions_j2 = ["ㄴ", "ㄷ", "ㄹ", "ㅌ"]
 model_j2 = load_model('models/J/model_j2.h5')
 
 ## j3
-actions_j3 = ["mieum", "bieup", "p'ieup'", "ieung_1"]
+# actions_j3 = ["mieum", "bieup", "p'ieup'", "ieung_1"]
+actions_j3 = ["ㅁ", "ㅂ", "ㅍ", "ㅇ_1"]
 model_j3 = load_model('models/J/model_j3.h5')
 
 ## j4
-actions_j4 = ["ieung_2", "hieu"]
+# actions_j4 = ["ieung_2", "hieu"]
+actions_j4 = ["ㅇ_2", "ㅎ"]
 model_j4 = load_model('models/J/model_j4.h5')
 
 # -------------------------------------------------- #
@@ -39,7 +43,7 @@ hands = mp_hands.Hands(
     min_detection_confidence=0.5,
     min_tracking_confidence=0.5)
 
-cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
+cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
 
 seq = []
 action_seq = []
@@ -163,8 +167,18 @@ while cap.isOpened():
     # Display Probability
     cv2.putText(img, 'OUTPUT'
                 , (15,18), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
-    cv2.putText(img, f'{this_action.upper()}'
-                , (15,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+    # cv2.putText(img, f'{this_action.upper()}'
+    #             , (15,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+
+    # 한글 적용
+    b,g,r,a = 255,255,255,0
+    # fontpath = "fonts/gulim.ttc" # 30, (30, 25)
+    fontpath = "fonts/KoPubWorld Dotum Bold.ttf"
+    img_pil = Image.fromarray(img)
+    font = ImageFont.truetype(fontpath, 35)
+    draw = ImageDraw.Draw(img_pil)
+    draw.text((30, 15), f'{this_action}', font=font, fill=(b,g,r,a))
+    img = np.array(img_pil)
 
     # Display Probability
     cv2.putText(img, 'MODEL'
