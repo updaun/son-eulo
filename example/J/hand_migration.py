@@ -33,6 +33,7 @@ model_j4 = load_model('models/J/model_j4.h5')
 # -------------------------------------------------- #
 
 seq_length = 30
+confidence = 0.6
 
 
 # MediaPipe hands model
@@ -106,7 +107,7 @@ while cap.isOpened():
                 i_pred = int(np.argmax(y_pred))
                 conf = y_pred[i_pred]
                 
-                if conf < 0.8:
+                if conf < confidence:
                     continue
 
                 action = actions_j3[i_pred]
@@ -119,7 +120,7 @@ while cap.isOpened():
                 i_pred = int(np.argmax(y_pred))
                 conf = y_pred[i_pred]
 
-                if conf < 0.8:
+                if conf < confidence:
                     continue
 
                 action = actions_j1[i_pred]
@@ -131,7 +132,7 @@ while cap.isOpened():
                 i_pred = int(np.argmax(y_pred))
                 conf = y_pred[i_pred]
 
-                if conf < 0.8:
+                if conf < confidence:
                     continue
 
                 action = actions_j2[i_pred]
@@ -142,7 +143,7 @@ while cap.isOpened():
                 i_pred = int(np.argmax(y_pred))
                 conf = y_pred[i_pred]
 
-                if conf < 0.8:
+                if conf < confidence:
                     continue
 
                 action = actions_j4[i_pred]
