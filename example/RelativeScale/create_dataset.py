@@ -5,6 +5,7 @@ import time, os
 from PIL import ImageFont, ImageDraw, Image
 
 actions = ['ㄱ', 'ㄴ', 'ㄷ', 'ㄹ']
+
 seq_length = 30
 secs_for_action = 30
 

@@ -2,6 +2,7 @@ import cv2
 import mediapipe as mp
 import numpy as np
 from tensorflow.keras.models import load_model
+import tensorflow as tf
 from pynput.keyboard import Key, Controller
 from PIL import ImageFont, ImageDraw, Image
 
@@ -13,22 +14,35 @@ kbControl = Controller()
 ## j1
 # actions_j1 = ["giyeok", "shiot", "jieut", "ch'ieuch'", "k'ieuk'"] 
 actions_j1 = ["ㄱ", "ㅅ", "ㅈ", "ㅊ", "ㅋ"] 
-model_j1 = load_model('models/J/model_j1.h5')
+# model_j1 = load_model('models/J/model_j1.h5')
+interpreter_j1 = tf.lite.Interpreter(model_path="models/J/model_j1.tflite")
+interpreter_j1.allocate_tensors()
 
 ## j2
 # actions_j2 = ["nieun", "digeut", "rieul", "t'ieut'"]
 actions_j2 = ["ㄴ", "ㄷ", "ㄹ", "ㅌ"]
-model_j2 = load_model('models/J/model_j2.h5')
+# model_j2 = load_model('models/J/model_j2.h5')
+interpreter_j2 = tf.lite.Interpreter(model_path="models/J/model_j2.tflite")
+interpreter_j2.allocate_tensors()
 
 ## j3
 # actions_j3 = ["mieum", "bieup", "p'ieup'", "ieung_1"]
 actions_j3 = ["ㅁ", "ㅂ", "ㅍ", "ㅇ_1"]
-model_j3 = load_model('models/J/model_j3.h5')
+# model_j3 = load_model('models/J/model_j3.h5')
+interpreter_j3 = tf.lite.Interpreter(model_path="models/J/model_j3.tflite")
+interpreter_j3.allocate_tensors()
 
 ## j4
 # actions_j4 = ["ieung_2", "hieu"]
 actions_j4 = ["ㅇ_2", "ㅎ"]
-model_j4 = load_model('models/J/model_j4.h5')
+# model_j4 = load_model('models/J/model_j4.h5')
+interpreter_j4 = tf.lite.Interpreter(model_path="models/J/model_j4.tflite")
+interpreter_j4.allocate_tensors()
+
+# Get input and output tensors.
+input_details = interpreter_j1.get_input_details()
+output_details = interpreter_j1.get_output_details()
+
 
 # -------------------------------------------------- #
 
@@ -103,48 +117,55 @@ while cap.isOpened():
             if lmlist_5_x < lmlist_17_x and lmlist_5_y < lmlist_0_y and lmlist_17_y < lmlist_0_y:
                 print("model j3")
                 select_model = "j3"
-                y_pred = model_j3.predict(input_data).squeeze()
-                i_pred = int(np.argmax(y_pred))
-                conf = y_pred[i_pred]
+                interpreter_j3.set_tensor(input_details[0]['index'], input_data)
+                interpreter_j3.invoke()
+                y_pred = interpreter_j3.get_tensor(output_details[0]['index'])
+                i_pred = int(np.argmax(y_pred[0]))
+                # conf = y_pred[i_pred]
                 
-                if conf < confidence:
-                    continue
+                # if conf < confidence:
+                #     continue
 
                 action = actions_j3[i_pred]
 
             elif lmlist_5_x < lmlist_17_x and lmlist_0_y < lmlist_5_y and lmlist_0_y < lmlist_17_y:
                 print("model j1")
                 select_model = "j1"
-                y_pred = model_j1.predict(input_data).squeeze()
+                interpreter_j1.set_tensor(input_details[0]['index'], input_data)
+                interpreter_j1.invoke()
+                y_pred = interpreter_j1.get_tensor(output_details[0]['index'])
+                i_pred = int(np.argmax(y_pred[0]))
+                # conf = y_pred[i_pred]
 
-                i_pred = int(np.argmax(y_pred))
-                conf = y_pred[i_pred]
-
-                if conf < confidence:
-                    continue
+                # if conf < confidence:
+                #     continue
 
                 action = actions_j1[i_pred]
 
             elif lmlist_5_x < lmlist_0_x and lmlist_5_y < lmlist_17_y:
                 print("model j2")
                 select_model = "j2"
-                y_pred = model_j2.predict(input_data).squeeze()
-                i_pred = int(np.argmax(y_pred))
-                conf = y_pred[i_pred]
+                interpreter_j2.set_tensor(input_details[0]['index'], input_data)
+                interpreter_j2.invoke()
+                y_pred = interpreter_j2.get_tensor(output_details[0]['index'])
+                i_pred = int(np.argmax(y_pred[0]))
+                # conf = y_pred[i_pred]
 
-                if conf < confidence:
-                    continue
+                # if conf < confidence:
+                #     continue
 
                 action = actions_j2[i_pred]
             else:
                 print("model j4")
                 select_model = "j4"
-                y_pred = model_j4.predict(input_data).squeeze()
-                i_pred = int(np.argmax(y_pred))
-                conf = y_pred[i_pred]
+                interpreter_j4.set_tensor(input_details[0]['index'], input_data)
+                interpreter_j4.invoke()
+                y_pred = interpreter_j4.get_tensor(output_details[0]['index'])
+                i_pred = int(np.argmax(y_pred[0]))
+                # conf = y_pred[i_pred]
 
-                if conf < confidence:
-                    continue
+                # if conf < confidence:
+                #     continue
 
                 action = actions_j4[i_pred]
             
@@ -154,8 +175,8 @@ while cap.isOpened():
             if len(action_seq) < 3:
                 continue
 
-            this_action = '?'
-            if action_seq[-1] == action_seq[-2] == action_seq[-3]:
+            this_action = ' '
+            if action_seq[-1] == action_seq[-2]:
                 this_action = action
 
                 if last_action != this_action:
