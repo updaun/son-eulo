@@ -2,8 +2,10 @@ import cv2
 import mediapipe as mp
 import numpy as np
 import time, os
+from PIL import ImageFont, ImageDraw, Image
 
-actions = ['giyeok', 'nieun', 'digeut', 'rieul']
+actions = ['ㄱ', 'ㄴ', 'ㄷ', 'ㄹ']
+
 seq_length = 30
 secs_for_action = 30
 
@@ -28,7 +30,19 @@ while cap.isOpened():
 
         img = cv2.flip(img, 1)
 
-        cv2.putText(img, f'Waiting for collecting {action.upper()} action...', org=(10, 30), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1, color=(255, 255, 255), thickness=2)
+        # cv2.putText(img, f'Waiting for collecting {action.upper()} action...', org=(10, 30), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1, color=(255, 255, 255), thickness=2)
+        
+        # 한글 적용
+        b,g,r,a = 255,255,255,0
+        # fontpath = "fonts/gulim.ttc" # 30, (30, 25)
+        fontpath = "fonts/KoPubWorld Dotum Bold.ttf"
+        img_pil = Image.fromarray(img)
+        font = ImageFont.truetype(fontpath, 30)
+        draw = ImageDraw.Draw(img_pil)
+        draw.text((10, 10), f'Waiting for collecting {action.upper()} action...', font=font, fill=(b,g,r,a))
+        img = np.array(img_pil)
+    
+        
         cv2.imshow('img', img)
         cv2.waitKey(3000)
 
