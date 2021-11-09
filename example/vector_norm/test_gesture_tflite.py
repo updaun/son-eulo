@@ -3,17 +3,20 @@ import mediapipe as mp
 import numpy as np
 from tensorflow.keras.models import load_model
 from PIL import ImageFont, ImageDraw, Image
+import tensorflow as tf
 
 
 
 # ------------------- 모델 ------------------- #
 
-actions = ['ㄱ','ㅅ','ㅈ','ㅊ','ㅋ']
+actions = ['ㄱ','ㅅ','ㅈ','ㅋ','ㅊ']
 
 ## j1
 # actions = ['ㄱ', 'ㄴ', 'ㄷ', 'ㄹ', ' ']
 # actions = ["giyeok", "shiot", "jieut", "ch'ieuch'", "k'ieuk'"] 
-model = load_model('models/J/jdu_j_scale_norm_model.h5')
+# model = load_model('models/J/jdu_j_model.h5')
+interpreter_j1 = tf.lite.Interpreter(model_path="models/J/jdu_j_scale_norm_model.tflite")
+interpreter_j1.allocate_tensors()
 
 ## j2
 # actions = ["nieun", "digeut", "rieul", "t'ieut'"]
@@ -29,8 +32,12 @@ model = load_model('models/J/jdu_j_scale_norm_model.h5')
 
 # -------------------------------------------------- #
 
-seq_length = 30
+# Get input and output tensors.
+input_details = interpreter_j1.get_input_details()
+output_details = interpreter_j1.get_output_details()
 
+seq_length = 30
+this_action = ''
 
 # MediaPipe hands model
 mp_hands = mp.solutions.hands
@@ -45,7 +52,6 @@ cap = cv2.VideoCapture(0)
 seq = []
 action_seq = []
 last_action = None
-this_action = ''
 
 while cap.isOpened():
     ret, img = cap.read()
@@ -59,25 +65,8 @@ while cap.isOpened():
     if result.multi_hand_landmarks is not None:
         for res in result.multi_hand_landmarks:
             joint = np.zeros((21, 2))
-            x_right_label = []
-            y_right_label = []
             for j, lm in enumerate(res.landmark):
-                joint[j] = [lm.x, lm.y] # z축 제거, visibility 제거
-                
-            for i in range(21):
-                x_right_label.append(joint[i][0] - joint[0][0])
-                y_right_label.append(joint[i][1] - joint[0][1])
-
-            if max(x_right_label) == min(x_right_label):
-                x_right_scale = x_right_label
-            else:
-                x_right_scale = x_right_label/(max(x_right_label)-min(x_right_label))
-                
-            if max(y_right_label) == min(y_right_label):
-                y_right_scale = y_right_label
-            else:
-                y_right_scale = y_right_label/(max(y_right_label)-min(y_right_label))
-            full_scale = np.concatenate([x_right_scale.flatten(), y_right_scale.flatten()])
+                joint[j] = [lm.x, lm.y]
 
             # Compute angles between joints
             v1 = joint[[0,1,2,3,0,5,6,7,0,9,10,11,0,13,14,15,0,17,18,19], :3] # Parent joint
@@ -93,7 +82,7 @@ while cap.isOpened():
 
             angle = np.degrees(angle) # Convert radian to degree
 
-            d = np.concatenate([full_scale, angle])
+            d = np.concatenate([v.flatten(), angle])
 
             seq.append(d)
 
@@ -104,13 +93,10 @@ while cap.isOpened():
 
             input_data = np.expand_dims(np.array(seq[-seq_length:], dtype=np.float32), axis=0)
 
-            y_pred = model.predict(input_data).squeeze()
-
-            i_pred = int(np.argmax(y_pred))
-            conf = y_pred[i_pred]
-
-            if conf < 0.8:
-                continue
+            interpreter_j1.set_tensor(input_details[0]['index'], input_data)
+            interpreter_j1.invoke()
+            y_pred = interpreter_j1.get_tensor(output_details[0]['index'])
+            i_pred = int(np.argmax(y_pred[0]))
 
             action = actions[i_pred]
             action_seq.append(action)
@@ -124,9 +110,11 @@ while cap.isOpened():
 
                 if last_action != this_action:
                     last_action = this_action
-        
-    img = cv2.flip(img, 1)
 
+            # cv2.putText(img, f'{this_action.upper()}', org=(int(res.landmark[0].x * img.shape[1]), int(res.landmark[0].y * img.shape[0] + 20)), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1, color=(255, 255, 255), thickness=2)
+
+    img = cv2.flip(img, 1)
+            
     # Get status box
     cv2.rectangle(img, (0,0), (260, 60), (245, 117, 16), -1)
 

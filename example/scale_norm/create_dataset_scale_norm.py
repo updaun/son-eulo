@@ -4,7 +4,7 @@ import numpy as np
 import time, os
 from PIL import ImageFont, ImageDraw, Image
 
-actions = ['v','b']
+actions = ['ㄱ','ㅅ','ㅈ','ㅊ','ㅋ']
 
 seq_length = 30
 secs_for_action = 30
@@ -122,5 +122,5 @@ while cap.isOpened():
         full_seq_data = np.array(full_seq_data)
         # print(action, full_seq_data.shape)
         # 데이터 저장
-        # np.save(os.path.join('dataset', f'seq_{action}_{created_time}'), full_seq_data)
+        np.save(os.path.join('dataset', f'seq_{action}_{created_time}'), full_seq_data)
     break

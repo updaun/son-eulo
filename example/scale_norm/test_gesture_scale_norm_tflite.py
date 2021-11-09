@@ -3,7 +3,7 @@ import mediapipe as mp
 import numpy as np
 from tensorflow.keras.models import load_model
 from PIL import ImageFont, ImageDraw, Image
-
+import tensorflow as tf
 
 
 # ------------------- 모델 ------------------- #
@@ -13,8 +13,8 @@ actions = ['ㄱ','ㅅ','ㅈ','ㅊ','ㅋ']
 ## j1
 # actions = ['ㄱ', 'ㄴ', 'ㄷ', 'ㄹ', ' ']
 # actions = ["giyeok", "shiot", "jieut", "ch'ieuch'", "k'ieuk'"] 
-model = load_model('models/J/jdu_j_scale_norm_model.h5')
-
+interpreter_j1 = tf.lite.Interpreter(model_path="models/J/jdu_j_scale_norm_model.tflite")
+interpreter_j1.allocate_tensors()
 ## j2
 # actions = ["nieun", "digeut", "rieul", "t'ieut'"]
 # model = load_model('models/J/model_j2.h5')
@@ -28,6 +28,10 @@ model = load_model('models/J/jdu_j_scale_norm_model.h5')
 # model = load_model('models/J/model_j4.h5')
 
 # -------------------------------------------------- #
+
+# Get input and output tensors.
+input_details = interpreter_j1.get_input_details()
+output_details = interpreter_j1.get_output_details()
 
 seq_length = 30
 
@@ -104,13 +108,10 @@ while cap.isOpened():
 
             input_data = np.expand_dims(np.array(seq[-seq_length:], dtype=np.float32), axis=0)
 
-            y_pred = model.predict(input_data).squeeze()
-
-            i_pred = int(np.argmax(y_pred))
-            conf = y_pred[i_pred]
-
-            if conf < 0.8:
-                continue
+            interpreter_j1.set_tensor(input_details[0]['index'], input_data)
+            interpreter_j1.invoke()
+            y_pred = interpreter_j1.get_tensor(output_details[0]['index'])
+            i_pred = int(np.argmax(y_pred[0]))         
 
             action = actions[i_pred]
             action_seq.append(action)
