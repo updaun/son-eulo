@@ -22,7 +22,7 @@ kbControl = Controller()
 # model = load_model('models/M/model_m4.h5')
 
 actions = ['eu', 'ui']  # 방향에 따라 분류 (옆)
-model = load_model('models/M/model.h5')
+model = load_model('models/M/model_m5.h5')
 
 seq_length = 30
 

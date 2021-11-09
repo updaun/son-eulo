@@ -6,4 +6,5 @@ print(j2hcj(h2j("한굴")))
 
 from jamo import j2h
 print(j2h('ㅇ', 'ㅕ', 'ㅇ'))
-print(j2h('ㅇ', 'ㅓ'))
+print(j2h( 'ㅓ','ㅇ'))
+

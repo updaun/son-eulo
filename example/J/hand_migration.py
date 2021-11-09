@@ -13,22 +13,22 @@ kbControl = Controller()
 ## j1
 # actions_j1 = ["giyeok", "shiot", "jieut", "ch'ieuch'", "k'ieuk'"] 
 actions_j1 = ["ㄱ", "ㅅ", "ㅈ", "ㅊ", "ㅋ"] 
-model_j1 = load_model('models/J/model_j1.h5')
+model_j1 = load_model('models/J/model_j21.h5')
 
 ## j2
 # actions_j2 = ["nieun", "digeut", "rieul", "t'ieut'"]
 actions_j2 = ["ㄴ", "ㄷ", "ㄹ", "ㅌ"]
-model_j2 = load_model('models/J/model_j2.h5')
+model_j2 = load_model('models/J/model_j22.h5')
 
 ## j3
 # actions_j3 = ["mieum", "bieup", "p'ieup'", "ieung_1"]
 actions_j3 = ["ㅁ", "ㅂ", "ㅍ", "ㅇ_1"]
-model_j3 = load_model('models/J/model_j3.h5')
+model_j3 = load_model('models/J/model_j23.h5')
 
 ## j4
 # actions_j4 = ["ieung_2", "hieu"]
 actions_j4 = ["ㅇ_2", "ㅎ"]
-model_j4 = load_model('models/J/model_j4.h5')
+model_j4 = load_model('models/J/model_j24.h5')
 
 # -------------------------------------------------- #
 
@@ -66,9 +66,9 @@ while cap.isOpened():
 
     if result.multi_hand_landmarks is not None:
         for res in result.multi_hand_landmarks:
-            joint = np.zeros((21, 4))
+            joint = np.zeros((21, 3))
             for j, lm in enumerate(res.landmark):
-                joint[j] = [lm.x, lm.y, lm.z, lm.visibility]
+                joint[j] = [lm.x, lm.y, lm.z]
                 if j == 0:
                     lmlist_0_x, lmlist_0_y = int(lm.x*w), int(lm.y*h)
                 elif j == 5:

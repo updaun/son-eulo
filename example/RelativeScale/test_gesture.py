@@ -1,21 +1,17 @@
-import sys
-# sys.path.append('pingpong')
-# from pingpong.pingpongthread import PingPongThread
 import cv2
 import mediapipe as mp
 import numpy as np
 from tensorflow.keras.models import load_model
-from pynput.keyboard import Key, Controller
+from PIL import ImageFont, ImageDraw, Image
 
-
-kbControl = Controller()
 
 
 # ------------------- 모델 ------------------- #
 
 ## j1
-actions = ['ㄱ','ㅏ','ㅇ'] 
-model = load_model('models/model_gang.h5')
+actions = ['ㄱ', 'ㄴ', 'ㄷ', 'ㄹ', ' ']
+# actions = ["giyeok", "shiot", "jieut", "ch'ieuch'", "k'ieuk'"] 
+model = load_model('models/J/model_j1.h5')
 
 ## j2
 # actions = ["nieun", "digeut", "rieul", "t'ieut'"]
@@ -53,16 +49,15 @@ while cap.isOpened():
     if not ret:
         break
 
-    img = cv2.flip(img, 1)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     result = hands.process(img)
     img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
 
     if result.multi_hand_landmarks is not None:
         for res in result.multi_hand_landmarks:
-            joint = np.zeros((21, 3))
+            joint = np.zeros((21, 2))
             for j, lm in enumerate(res.landmark):
-                joint[j] = [lm.x, lm.y, lm.z]
+                joint[j] = [lm.x, lm.y]
 
             # Compute angles between joints
             v1 = joint[[0,1,2,3,0,5,6,7,0,9,10,11,0,13,14,15,0,17,18,19], :3] # Parent joint
@@ -76,7 +71,7 @@ while cap.isOpened():
                 v[[0,1,2,4,5,6,8,9,10,12,13,14,16,17,18],:], 
                 v[[1,2,3,5,6,7,9,10,11,13,14,15,17,18,19],:])) # [15,]
 
-            angle = np.degrees(angle) # Convert radian to degree
+            angle = np.round(np.degrees(angle) / 360, 6) # Convert radian to degree
 
             d = np.concatenate([joint.flatten(), angle])
 
@@ -94,7 +89,7 @@ while cap.isOpened():
             i_pred = int(np.argmax(y_pred))
             conf = y_pred[i_pred]
 
-            if conf < 0.9:
+            if conf < 0.8:
                 continue
 
             action = actions[i_pred]
@@ -108,56 +103,27 @@ while cap.isOpened():
                 this_action = action
 
                 if last_action != this_action:
-                    if this_action == 'go':
-                        
-                        kbControl.press(Key.right)
-                        kbControl.release(Key.right)
-
-                    elif this_action == 'back':
-
-                        kbControl.press(Key.left)
-                        kbControl.release(Key.left)
-
-                    elif this_action == 'start':
-
-                        kbControl.press(Key.f5)
-                        kbControl.release(Key.f5)
-
-                    elif this_action == 'finish':
-
-                        kbControl.press(Key.esc)
-                        kbControl.release(Key.esc)
-
                     last_action = this_action
-                ####################################################
-                # text input test
-                ####################################################
-                # if last_action != this_action:
-                #     if this_action == 'go':
-                        
-                #         kbControl.press('g')
-                #         kbControl.release('g')
 
-                #     elif this_action == 'back':
+            # cv2.putText(img, f'{this_action.upper()}', org=(int(res.landmark[0].x * img.shape[1]), int(res.landmark[0].y * img.shape[0] + 20)), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1, color=(255, 255, 255), thickness=2)
 
-                #         kbControl.press('b')
-                #         kbControl.release('b')
+            img = cv2.flip(img, 1)
+            # Get status box
+            cv2.rectangle(img, (0,0), (260, 60), (245, 117, 16), -1)
 
-                #     elif this_action == 'start':
-
-                #         kbControl.press('s')
-                #         kbControl.release('s')
-
-                #     elif this_action == 'finish':
-
-                #         kbControl.press('f')
-                #         kbControl.release('f')
-
-                #     last_action = this_action
-
-            cv2.putText(img, f'{this_action.upper()}', org=(int(res.landmark[0].x * img.shape[1]), int(res.landmark[0].y * img.shape[0] + 20)), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1, color=(255, 255, 255), thickness=2)
+            # Display Probability
+            cv2.putText(img, 'OUTPUT'
+                        , (15,18), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
+            # 한글 적용
+            b,g,r,a = 255,255,255,0
+            # fontpath = "fonts/gulim.ttc" # 30, (30, 25)
+            fontpath = "fonts/KoPubWorld Dotum Bold.ttf"
+            img_pil = Image.fromarray(img)
+            font = ImageFont.truetype(fontpath, 35)
+            draw = ImageDraw.Draw(img_pil)
+            draw.text((30, 15), f'{this_action}', font=font, fill=(b,g,r,a))
+            img = np.array(img_pil)
 
     cv2.imshow('img', img)
     if cv2.waitKey(1) == ord('q'):
         break
-

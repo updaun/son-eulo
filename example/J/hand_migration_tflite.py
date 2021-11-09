@@ -15,28 +15,28 @@ kbControl = Controller()
 # actions_j1 = ["giyeok", "shiot", "jieut", "ch'ieuch'", "k'ieuk'"] 
 actions_j1 = ["ㄱ", "ㅅ", "ㅈ", "ㅊ", "ㅋ"] 
 # model_j1 = load_model('models/J/model_j1.h5')
-interpreter_j1 = tf.lite.Interpreter(model_path="models/J/model_j1.tflite")
+interpreter_j1 = tf.lite.Interpreter(model_path="models/J/model_j21.tflite")
 interpreter_j1.allocate_tensors()
 
 ## j2
 # actions_j2 = ["nieun", "digeut", "rieul", "t'ieut'"]
 actions_j2 = ["ㄴ", "ㄷ", "ㄹ", "ㅌ"]
 # model_j2 = load_model('models/J/model_j2.h5')
-interpreter_j2 = tf.lite.Interpreter(model_path="models/J/model_j2.tflite")
+interpreter_j2 = tf.lite.Interpreter(model_path="models/J/model_j22.tflite")
 interpreter_j2.allocate_tensors()
 
 ## j3
 # actions_j3 = ["mieum", "bieup", "p'ieup'", "ieung_1"]
 actions_j3 = ["ㅁ", "ㅂ", "ㅍ", "ㅇ_1"]
 # model_j3 = load_model('models/J/model_j3.h5')
-interpreter_j3 = tf.lite.Interpreter(model_path="models/J/model_j3.tflite")
+interpreter_j3 = tf.lite.Interpreter(model_path="models/J/model_j23.tflite")
 interpreter_j3.allocate_tensors()
 
 ## j4
 # actions_j4 = ["ieung_2", "hieu"]
 actions_j4 = ["ㅇ_2", "ㅎ"]
 # model_j4 = load_model('models/J/model_j4.h5')
-interpreter_j4 = tf.lite.Interpreter(model_path="models/J/model_j4.tflite")
+interpreter_j4 = tf.lite.Interpreter(model_path="models/J/model_j24.tflite")
 interpreter_j4.allocate_tensors()
 
 # Get input and output tensors.
@@ -80,9 +80,9 @@ while cap.isOpened():
 
     if result.multi_hand_landmarks is not None:
         for res in result.multi_hand_landmarks:
-            joint = np.zeros((21, 4))
+            joint = np.zeros((21, 3))
             for j, lm in enumerate(res.landmark):
-                joint[j] = [lm.x, lm.y, lm.z, lm.visibility]
+                joint[j] = [lm.x, lm.y, lm.z]
                 if j == 0:
                     lmlist_0_x, lmlist_0_y = int(lm.x*w), int(lm.y*h)
                 elif j == 5:
