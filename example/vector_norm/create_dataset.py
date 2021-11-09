@@ -4,7 +4,7 @@ import numpy as np
 import time, os
 from PIL import ImageFont, ImageDraw, Image
 
-actions = ['ㄱ', 'ㄴ', 'ㄷ', 'ㄹ']
+actions = ['ㄱ','ㅅ','ㅈ','ㅋ','ㅊ']
 
 seq_length = 30
 secs_for_action = 30
@@ -63,24 +63,26 @@ while cap.isOpened():
                         joint[j] = [lm.x, lm.y] # z축 제거, visibility 제거
 
                     # Compute angles between joints
-                    v1 = joint[[0,1,2,3,0,5,6,7,0,9,10,11,0,13,14,15,0,17,18,19], :3] # Parent joint
+                    v1 = joint[[0,1,2,3,0,5,6,7,0, 9,10,11, 0,13,14,15, 0,17,18,19], :3] # Parent joint
                     v2 = joint[[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20], :3] # Child joint
                     v = v2 - v1 # [20, 3]
-                    # Normalize v
+                    # Normalize vector
                     v = v / np.linalg.norm(v, axis=1)[:, np.newaxis]
-                    print(v[0])
+                    # print(v[0])
                     # Get angle using arcos of dot product
                     angle = np.arccos(np.einsum('nt,nt->n',
-                        v[[0,1,2,4,5,6,8,9,10,12,13,14,16,17,18],:], 
+                        v[[0,1,2,4,5,6,8, 9,10,12,13,14,16,17,18],:], 
                         v[[1,2,3,5,6,7,9,10,11,13,14,15,17,18,19],:])) # [15,]
 
-                    angle = np.round(np.degrees(angle) / 360, 6) # Convert radian to degree
+                    angle = np.degrees(angle) # Convert radian to degree
 
                     angle_label = np.array([angle], dtype=np.float32)
                     angle_label = np.append(angle_label, idx)
 
-                    d = np.concatenate([joint.flatten(), angle_label])
-
+                    d = np.concatenate([v.flatten(), angle_label])
+                    # d = np.concatenate([joint.flatten(), angle_label])
+                    print(len(d))
+                    print(d)
                     data.append(d)
 
                     mp_drawing.draw_landmarks(img, res, mp_hands.HAND_CONNECTIONS)

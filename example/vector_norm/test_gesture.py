@@ -8,10 +8,12 @@ from PIL import ImageFont, ImageDraw, Image
 
 # ------------------- 모델 ------------------- #
 
+actions = ['ㄱ','ㅅ','ㅈ','ㅋ','ㅊ']
+
 ## j1
-actions = ['ㄱ', 'ㄴ', 'ㄷ', 'ㄹ', ' ']
+# actions = ['ㄱ', 'ㄴ', 'ㄷ', 'ㄹ', ' ']
 # actions = ["giyeok", "shiot", "jieut", "ch'ieuch'", "k'ieuk'"] 
-model = load_model('models/J/model_j1.h5')
+model = load_model('models/J/jdu_j_model.h5')
 
 ## j2
 # actions = ["nieun", "digeut", "rieul", "t'ieut'"]
@@ -28,7 +30,7 @@ model = load_model('models/J/model_j1.h5')
 # -------------------------------------------------- #
 
 seq_length = 30
-
+this_action = ''
 
 # MediaPipe hands model
 mp_hands = mp.solutions.hands
@@ -71,9 +73,9 @@ while cap.isOpened():
                 v[[0,1,2,4,5,6,8,9,10,12,13,14,16,17,18],:], 
                 v[[1,2,3,5,6,7,9,10,11,13,14,15,17,18,19],:])) # [15,]
 
-            angle = np.round(np.degrees(angle) / 360, 6) # Convert radian to degree
+            angle = np.degrees(angle) # Convert radian to degree
 
-            d = np.concatenate([joint.flatten(), angle])
+            d = np.concatenate([v.flatten(), angle])
 
             seq.append(d)
 
@@ -107,22 +109,23 @@ while cap.isOpened():
 
             # cv2.putText(img, f'{this_action.upper()}', org=(int(res.landmark[0].x * img.shape[1]), int(res.landmark[0].y * img.shape[0] + 20)), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1, color=(255, 255, 255), thickness=2)
 
-            img = cv2.flip(img, 1)
-            # Get status box
-            cv2.rectangle(img, (0,0), (260, 60), (245, 117, 16), -1)
+    img = cv2.flip(img, 1)
+            
+    # Get status box
+    cv2.rectangle(img, (0,0), (260, 60), (245, 117, 16), -1)
 
-            # Display Probability
-            cv2.putText(img, 'OUTPUT'
-                        , (15,18), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
-            # 한글 적용
-            b,g,r,a = 255,255,255,0
-            # fontpath = "fonts/gulim.ttc" # 30, (30, 25)
-            fontpath = "fonts/KoPubWorld Dotum Bold.ttf"
-            img_pil = Image.fromarray(img)
-            font = ImageFont.truetype(fontpath, 35)
-            draw = ImageDraw.Draw(img_pil)
-            draw.text((30, 15), f'{this_action}', font=font, fill=(b,g,r,a))
-            img = np.array(img_pil)
+    # Display Probability
+    cv2.putText(img, 'OUTPUT'
+                , (15,18), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
+    # 한글 적용
+    b,g,r,a = 255,255,255,0
+    # fontpath = "fonts/gulim.ttc" # 30, (30, 25)
+    fontpath = "fonts/KoPubWorld Dotum Bold.ttf"
+    img_pil = Image.fromarray(img)
+    font = ImageFont.truetype(fontpath, 35)
+    draw = ImageDraw.Draw(img_pil)
+    draw.text((30, 15), f'{this_action}', font=font, fill=(b,g,r,a))
+    img = np.array(img_pil)
 
     cv2.imshow('img', img)
     if cv2.waitKey(1) == ord('q'):

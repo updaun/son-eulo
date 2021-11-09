@@ -4,7 +4,7 @@ import numpy as np
 import time, os
 from PIL import ImageFont, ImageDraw, Image
 
-actions = ['ㄱ']
+actions = ['v','b']
 
 seq_length = 30
 secs_for_action = 30
@@ -95,11 +95,11 @@ while cap.isOpened():
 
                     angle_label = np.array([angle], dtype=np.float32)
                     angle_label = np.append(angle_label, idx)
-
+                    print(angle)
                     # d = np.concatenate([joint.flatten(), angle_label])
                     d = np.concatenate([full_scale, angle_label])
-                    print(len(d))
-                    print(d)
+                    # print(len(d))
+                    # print(d)
                     data.append(d)
 
                     mp_drawing.draw_landmarks(img, res, mp_hands.HAND_CONNECTIONS)
