@@ -4,6 +4,7 @@ import numpy as np
 from tensorflow.keras.models import load_model
 from pynput.keyboard import Key, Controller
 from PIL import ImageFont, ImageDraw, Image
+from hangul_utils import split_syllable_char, split_syllables, join_jamos
 
 kbControl = Controller()
 
@@ -218,10 +219,13 @@ while cap.isOpened():
 
 
 print(li)
-print(list(dict.fromkeys(li)))
+s = list(dict.fromkeys(li))
+print(s)
 
-from jamo import j2h
-print(j2h(list(dict.fromkeys(li))[0], list(dict.fromkeys(li))[1], list(dict.fromkeys(li))[2]))
+st = split_syllables(s)
+print(st)
+s2 = join_jamos(st)
+print(s2)
 
 
 
