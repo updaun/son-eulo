@@ -121,10 +121,10 @@ while cap.isOpened():
                 interpreter_j3.invoke()
                 y_pred = interpreter_j3.get_tensor(output_details[0]['index'])
                 i_pred = int(np.argmax(y_pred[0]))
-                # conf = y_pred[i_pred]
+                conf = y_pred[0][i_pred]
                 
-                # if conf < confidence:
-                #     continue
+                if conf < confidence:
+                    continue
 
                 action = actions_j3[i_pred]
 
@@ -135,10 +135,10 @@ while cap.isOpened():
                 interpreter_j1.invoke()
                 y_pred = interpreter_j1.get_tensor(output_details[0]['index'])
                 i_pred = int(np.argmax(y_pred[0]))
-                # conf = y_pred[i_pred]
+                conf = y_pred[0][i_pred]
 
-                # if conf < confidence:
-                #     continue
+                if conf < confidence:
+                    continue
 
                 action = actions_j1[i_pred]
 
@@ -149,10 +149,10 @@ while cap.isOpened():
                 interpreter_j2.invoke()
                 y_pred = interpreter_j2.get_tensor(output_details[0]['index'])
                 i_pred = int(np.argmax(y_pred[0]))
-                # conf = y_pred[i_pred]
+                conf = y_pred[0][i_pred]
 
-                # if conf < confidence:
-                #     continue
+                if conf < confidence:
+                    continue
 
                 action = actions_j2[i_pred]
             else:
@@ -162,10 +162,10 @@ while cap.isOpened():
                 interpreter_j4.invoke()
                 y_pred = interpreter_j4.get_tensor(output_details[0]['index'])
                 i_pred = int(np.argmax(y_pred[0]))
-                # conf = y_pred[i_pred]
+                conf = y_pred[0][i_pred]
 
-                # if conf < confidence:
-                #     continue
+                if conf < confidence:
+                    continue
 
                 action = actions_j4[i_pred]
             
@@ -176,7 +176,7 @@ while cap.isOpened():
                 continue
 
             this_action = ' '
-            if action_seq[-1] == action_seq[-2]:
+            if action_seq[-1] == action_seq[-2] == action_seq[-3]:
                 this_action = action
 
                 if last_action != this_action:

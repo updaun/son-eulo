@@ -70,6 +70,7 @@ this_action = ''
 select_model = ''
 
 wrist_angle = 0
+confidence = 0.9
 
 while cap.isOpened():
     ret, img = cap.read()
@@ -101,7 +102,7 @@ while cap.isOpened():
 
             if wrist_angle < 0:
                 wrist_angle += 360
-            print("wrist_angle : ",wrist_angle)
+            # print("wrist_angle : ",wrist_angle)
             for i in range(21):
                 x_right_label.append(joint[i][0] - joint[0][0])
                 y_right_label.append(joint[i][1] - joint[0][1])
@@ -150,10 +151,10 @@ while cap.isOpened():
                 interpreter_m1.invoke()
                 y_pred = interpreter_m1.get_tensor(output_details[0]['index'])
                 i_pred = int(np.argmax(y_pred[0]))
-                # conf = y_pred[i_pred]
+                conf = y_pred[0][i_pred]
                 
-                # if conf < 0.8:
-                #     continue
+                if conf < confidence:
+                    continue
 
                 action = actions_m1[i_pred]
 
@@ -165,10 +166,10 @@ while cap.isOpened():
                 interpreter_m2.invoke()
                 y_pred = interpreter_m2.get_tensor(output_details[0]['index'])
                 i_pred = int(np.argmax(y_pred[0]))
-                # conf = y_pred[i_pred]
+                conf = y_pred[0][i_pred]
                 
-                # if conf < 0.8:
-                #     continue
+                if conf < confidence:
+                    continue
 
                 action = actions_m2[i_pred]
 
@@ -179,10 +180,10 @@ while cap.isOpened():
                 interpreter_m3.invoke()
                 y_pred = interpreter_m3.get_tensor(output_details[0]['index'])
                 i_pred = int(np.argmax(y_pred[0]))
-                # conf = y_pred[i_pred]
+                conf = y_pred[0][i_pred]
 
-                # if conf < 0.8:
-                #     continue
+                if conf < confidence:
+                    continue
 
                 action = actions_m3[i_pred]
 
@@ -193,10 +194,10 @@ while cap.isOpened():
                 interpreter_m4.invoke()
                 y_pred = interpreter_m4.get_tensor(output_details[0]['index'])
                 i_pred = int(np.argmax(y_pred[0]))
-                # conf = y_pred[i_pred]
+                conf = y_pred[0][i_pred]
 
-                # if conf < 0.8:
-                #     continue
+                if conf < confidence:
+                    continue
 
                 action = actions_m4[i_pred]
 
@@ -207,14 +208,14 @@ while cap.isOpened():
                 interpreter_m5.invoke()
                 y_pred = interpreter_m5.get_tensor(output_details[0]['index'])
                 i_pred = int(np.argmax(y_pred[0]))
-                # conf = y_pred[i_pred]
+                conf = y_pred[0][i_pred]
 
-                # if conf < 0.8:
-                #     continue
+                if conf < confidence:
+                    continue
 
                 action = actions_m5[i_pred]
             
-            
+            print(conf)
 
             action_seq.append(action)
 

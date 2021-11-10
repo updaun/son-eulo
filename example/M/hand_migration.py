@@ -9,7 +9,7 @@ from PIL import ImageFont, ImageDraw, Image
 
 ## m1 방향에 따라 분류(손바닥 위)
 # actions_m1 = ['a','ae','ya','yae','i']
-actions_m1 = ['ㅏ','ㅐ','ㅑ','ㅙ','ㅣ']
+actions_m1 = ['ㅏ','ㅐ','ㅑ','ㅒ','ㅣ']
 model_m1 = load_model('models/M/model_m1.h5')
 
 ## m2 방향에 따라 분류(손등 위)
