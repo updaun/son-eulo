@@ -24,6 +24,7 @@ from models import PointHistoryClassifier
 
 def main():
 
+    status = ''
     history_length = 16
     point_history = deque(maxlen=history_length)
     finger_gesture_history = deque(maxlen=history_length)
@@ -87,8 +88,23 @@ def main():
                 most_common_fg_id = Counter(
                     finger_gesture_history).most_common()
 
+                status = point_history_classifier_labels[most_common_fg_id[0][0]]
+                # print(point_history_classifier_labels[most_common_fg_id[0][0]])
+                img = draw_point_history(img, point_history)
+
                 
-                print(point_history_classifier_labels[most_common_fg_id[0][0]])
+
+                
+
+        img = cv2.flip(img, 1)
+
+        # Get status box
+        cv2.rectangle(img, (0,0), (250, 60), (245, 117, 16), -1)
+        # Display Probability
+        cv2.putText(img, 'STATUS'
+                    , (15,18), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
+        cv2.putText(img, status
+        , (25,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
 
         cv2.imshow('img', img)
         # ESC 키를 눌렀을 때 창을 모두 종료하는 부분
@@ -159,6 +175,13 @@ def pre_process_point_history(image, point_history):
 
     return temp_point_history
 
+def draw_point_history(image, point_history):
+    for index, point in enumerate(point_history):
+        if point[0] != 0 and point[1] != 0:
+            cv2.circle(image, (point[0], point[1]), 1 + int(index / 2),
+                      (152, 251, 152), 2)
+
+    return image
 
 if __name__ == '__main__':
     main()
