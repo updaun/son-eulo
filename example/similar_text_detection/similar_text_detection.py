@@ -3,7 +3,8 @@ import os, sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(os.path.dirname(__file__)))))
 import modules.HolisticModule as hm
 import math
-
+import numpy as np
+from PIL import ImageFont, ImageDraw, Image
 
 # video input 
 cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
@@ -11,7 +12,7 @@ cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
 # Holistic 객체 생성
 detector = hm.HolisticDetector()
 
-number = 0
+text = ''
 
 while True:
 
@@ -46,18 +47,27 @@ while True:
             angle_2 += 360
 
         result = angle_2 - angle_1
-        print(result)
+        if result < 0:
+            text = 'ㅌ'
+        elif 0 < result < 20:
+            text = 'ㄹ'
+
 
     # Get status box
     cv2.rectangle(img, (0,0), (100, 60), (245, 117, 16), -1)
 
     # Display Probability
-    cv2.putText(img, 'NUMBER'
+    cv2.putText(img, 'STATUS'
                 , (15,18), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
-    if number != 0:
-        cv2.putText(img, str(number)
-                    , (25,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
-
+    # 한글 적용
+    b,g,r,a = 255,255,255,0
+    # fontpath = "fonts/gulim.ttc" # 30, (30, 25)
+    fontpath = "fonts/KoPubWorld Dotum Bold.ttf"
+    img_pil = Image.fromarray(img)
+    font = ImageFont.truetype(fontpath, 35)
+    draw = ImageDraw.Draw(img_pil)
+    draw.text((30, 15), f'{text}', font=font, fill=(b,g,r,a))
+    img = np.array(img_pil)
     # img를 우리에게 보여주는 부분
     cv2.imshow("Image", img)
 
