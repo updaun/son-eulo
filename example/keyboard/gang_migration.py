@@ -2,42 +2,39 @@ import cv2
 import mediapipe as mp
 import numpy as np
 from tensorflow.keras.models import load_model
-import math
+from pynput.keyboard import Key, Controller
 from PIL import ImageFont, ImageDraw, Image
+from hangul_utils import split_syllable_char, split_syllables, join_jamos
+
+kbControl = Controller()
+
 
 # ------------------- 모델 ------------------- #
 
-## m1 방향에 따라 분류(손바닥 위)
-# actions_m1 = ['a','ae','ya','yae','i']
-actions_m1 = ['ㅏ','ㅐ','ㅑ','ㅒ','ㅣ']
-model_m1 = load_model('models/M/model_m1.h5')
+## j1
+# actions_j1 = ["giyeok", "shiot", "jieut", "ch'ieuch'", "k'ieuk'"] 
+# actions_j1 = ["ㄱ", "ㅅ", "ㅈ", "ㅊ", "ㅋ"] 
+# model_j1 = load_model('models/J/model_j21.h5')
 
-## m2 방향에 따라 분류(손등 위)
-# actions_m2 = ['o','oe','yo']
-actions_m2 = ['ㅗ','ㅚ','ㅛ']
-model_m2 = load_model('models/M/model_m2.h5')
+# ## j2
+# # actions_j2 = ["nieun", "digeut", "rieul", "t'ieut'"]
+# actions_j2 = ["ㄴ", "ㄷ", "ㄹ", "ㅌ"]
+# model_j2 = load_model('models/J/model_j22.h5')
 
-## m3 방향에 따라 분류(아래)
-# actions_m3 = ['u','wi','yu']
-actions_m3 = ['ㅜ','ㅟ','ㅠ']
-model_m3 = load_model('models/M/model_m3.h5')
+# ## j3
+# # actions_j3 = ["mieum", "bieup", "p'ieup'", "ieung_1"]
+# actions_j3 = ["ㅁ", "ㅂ", "ㅍ", "ㅇ_1"]
+# model_j3 = load_model('models/J/model_j23.h5')
 
-## m4 방향에 따라 분류 (앞)
-# actions_m4 = ['eo','e','yeo','ye']
-actions_m4 = ['ㅓ','ㅔ','ㅕ','ㅖ']
-model_m4 = load_model('models/M/model_m4.h5')
-
-## m5 방향에 따라 분류 (옆)
-# actions_m5 = ['eu', 'ui']  
-actions_m5 = ['ㅡ', 'ㅢ']  
-model_m5 = load_model('models/M/model_m5.h5')
-
-
-
+## j4
+# actions_j4 = ["ieung_2", "hieu"]
+actions = ["ㄱ", "ㅏ","ㅇ"]
+model = load_model('models/model_gang.h5')
 
 # -------------------------------------------------- #
 
 seq_length = 30
+confidence = 0.6
 
 
 # MediaPipe hands model
@@ -55,11 +52,12 @@ action_seq = []
 last_action = None
 this_action = ''
 select_model = ''
-
-wrist_angle = 0
+li = []            ##
 
 while cap.isOpened():
     ret, img = cap.read()
+    if not this_action == '':
+        li.append(this_action)   
     if not ret:
         break
 
@@ -70,25 +68,18 @@ while cap.isOpened():
     result = hands.process(img)
     img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
 
+
     if result.multi_hand_landmarks is not None:
         for res in result.multi_hand_landmarks:
-            joint = np.zeros((21, 4))
+            joint = np.zeros((21, 3))
             for j, lm in enumerate(res.landmark):
-                joint[j] = [lm.x, lm.y, lm.z, lm.visibility]
+                joint[j] = [lm.x, lm.y, lm.z]
                 if j == 0:
                     lmlist_0_x, lmlist_0_y = int(lm.x*w), int(lm.y*h)
                 elif j == 5:
                     lmlist_5_x, lmlist_5_y = int(lm.x*w), int(lm.y*h)
                 elif j == 17:
                     lmlist_17_x, lmlist_17_y = int(lm.x*w), int(lm.y*h)
-
-            radian = math.atan2(lmlist_17_y-lmlist_0_y,lmlist_17_x-lmlist_0_x)-math.atan2(lmlist_5_y-lmlist_0_y,lmlist_5_x-lmlist_0_x)
-            wrist_angle = int(math.degrees(radian))
-
-            if wrist_angle < 0:
-                wrist_angle += 360
-
-            print("wrist_angle : ", wrist_angle)
             # Compute angles between joints
             v1 = joint[[0,1,2,3,0,5,6,7,0,9,10,11,0,13,14,15,0,17,18,19], :3] # Parent joint
             v2 = joint[[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20], :3] # Child joint
@@ -108,74 +99,75 @@ while cap.isOpened():
             seq.append(d)
 
             mp_drawing.draw_landmarks(img, res, mp_hands.HAND_CONNECTIONS)
+            
 
             if len(seq) < seq_length:
                 continue
 
             input_data = np.expand_dims(np.array(seq[-seq_length:], dtype=np.float32), axis=0)
 
-            if lmlist_5_x < lmlist_17_x and lmlist_5_y < lmlist_0_y and lmlist_17_y < lmlist_0_y:
-                # print("model m1")
-                select_model = "m1"
-                y_pred = model_m1.predict(input_data).squeeze()
-                i_pred = int(np.argmax(y_pred))
-                conf = y_pred[i_pred]
-                
-                if conf < 0.8:
-                    continue
+            #수정 여기부터
 
-                action = actions_m1[i_pred]
+            y_pred = model.predict(input_data).squeeze()
 
-            elif lmlist_5_x > lmlist_17_x and lmlist_5_y < lmlist_0_y and lmlist_17_y < lmlist_0_y:
-                # print("model m2")
-                select_model = "m2"
+            i_pred = int(np.argmax(y_pred))
+            conf = y_pred[i_pred]
 
-                y_pred = model_m2.predict(input_data).squeeze()
-                i_pred = int(np.argmax(y_pred))
-                conf = y_pred[i_pred]
-                
-                if conf < 0.8:
-                    continue
+            if conf < 0.5:
+                continue
 
-                action = actions_m2[i_pred]
+            action = actions[i_pred]
 
-            elif lmlist_5_x < lmlist_17_x and lmlist_0_y < lmlist_5_y and lmlist_0_y < lmlist_17_y:
-                # print("model m3")
-                select_model = "m3"
-                y_pred = model_m3.predict(input_data).squeeze()
-
-                i_pred = int(np.argmax(y_pred))
-                conf = y_pred[i_pred]
-
-                if conf < 0.8:
-                    continue
-
-                action = actions_m3[i_pred]
-
-            elif lmlist_5_x < lmlist_0_x and lmlist_5_y < lmlist_17_y and wrist_angle <= 300:
-                # print("model m4")
-                select_model = "m4"
-                y_pred = model_m4.predict(input_data).squeeze()
-                i_pred = int(np.argmax(y_pred))
-                conf = y_pred[i_pred]
-
-                if conf < 0.8:
-                    continue
-
-                action = actions_m4[i_pred]
-
-            elif lmlist_5_x < lmlist_0_x and lmlist_5_y < lmlist_17_y:
-                # print("model m5")
-                select_model = "m5"
-                y_pred = model_m5.predict(input_data).squeeze()
-                i_pred = int(np.argmax(y_pred))
-                conf = y_pred[i_pred]
-
-                if conf < 0.8:
-                    continue
-
-                action = actions_m5[i_pred]
             
+    
+
+            # if lmlist_5_x < lmlist_17_x and lmlist_5_y < lmlist_0_y and lmlist_17_y < lmlist_0_y:
+            #     print("model j3")
+            #     select_model = "j3"
+            #     y_pred = model_j3.predict(input_data).squeeze()
+            #     i_pred = int(np.argmax(y_pred))
+            #     conf = y_pred[i_pred]
+                
+            #     if conf < confidence:
+            #         continue
+
+            #     action = actions_j3[i_pred]
+
+            # elif lmlist_5_x < lmlist_17_x and lmlist_0_y < lmlist_5_y and lmlist_0_y < lmlist_17_y:
+            #     print("model j1")
+            #     select_model = "j1"
+            #     y_pred = model_j1.predict(input_data).squeeze()
+
+            #     i_pred = int(np.argmax(y_pred))
+            #     conf = y_pred[i_pred]
+
+            #     if conf < confidence:
+            #         continue
+
+            #     action = actions_j1[i_pred]
+
+            # elif lmlist_5_x < lmlist_0_x and lmlist_5_y < lmlist_17_y:
+            #     print("model j2")
+            #     select_model = "j2"
+            #     y_pred = model_j2.predict(input_data).squeeze()
+            #     i_pred = int(np.argmax(y_pred))
+            #     conf = y_pred[i_pred]
+
+            #     if conf < confidence:
+            #         continue
+
+            #     action = actions_j2[i_pred]
+            # else:
+            #     print("model j4")
+            #     select_model = "j4"
+            #     y_pred = model_j4.predict(input_data).squeeze()
+            #     i_pred = int(np.argmax(y_pred))
+            #     conf = y_pred[i_pred]
+
+            #     if conf < confidence:
+            #         continue
+
+            #     action = actions_j4[i_pred]
             
 
             action_seq.append(action)
@@ -183,7 +175,7 @@ while cap.isOpened():
             if len(action_seq) < 3:
                 continue
 
-            this_action = '?'
+            this_action = action
             if action_seq[-1] == action_seq[-2] == action_seq[-3]:
                 this_action = action
 
@@ -218,7 +210,22 @@ while cap.isOpened():
 
 
     cv2.imshow('img', img)
+    
+    
+   
     # ESC 키를 눌렀을 때 창을 모두 종료하는 부분
     if cv2.waitKey(1) & 0xFF == 27:
         break 
+
+
+print(li)
+s = list(dict.fromkeys(li))
+print(s)
+
+st = split_syllables(s)
+print(st)
+s2 = join_jamos(st)
+print(s2)
+
+
 

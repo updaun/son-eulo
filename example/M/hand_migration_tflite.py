@@ -10,7 +10,7 @@ from PIL import ImageFont, ImageDraw, Image
 
 ## m1 방향에 따라 분류(손바닥 위)
 # actions_m1 = ['a','ae','ya','yae','i']
-actions_m1 = ['ㅏ','ㅐ','ㅑ','ㅙ','ㅣ']
+actions_m1 = ['ㅏ','ㅐ','ㅑ','ㅒ','ㅣ']
 # model_m1 = load_model('models/M/model_m1.h5')
 interpreter_m1 = tf.lite.Interpreter(model_path="models/M/model_m1.tflite")
 interpreter_m1.allocate_tensors()
@@ -135,10 +135,9 @@ while cap.isOpened():
                 interpreter_m1.invoke()
                 y_pred = interpreter_m1.get_tensor(output_details[0]['index'])
                 i_pred = int(np.argmax(y_pred[0]))
-                # conf = y_pred[i_pred]
-                
-                # if conf < 0.8:
-                #     continue
+                conf = y_pred[0][i_pred]
+                if conf < 0.8:
+                    continue
 
                 action = actions_m1[i_pred]
 
@@ -150,10 +149,10 @@ while cap.isOpened():
                 interpreter_m2.invoke()
                 y_pred = interpreter_m2.get_tensor(output_details[0]['index'])
                 i_pred = int(np.argmax(y_pred[0]))
-                # conf = y_pred[i_pred]
+                conf = y_pred[0][i_pred]
                 
-                # if conf < 0.8:
-                #     continue
+                if conf < 0.8:
+                    continue
 
                 action = actions_m2[i_pred]
 
@@ -164,10 +163,10 @@ while cap.isOpened():
                 interpreter_m3.invoke()
                 y_pred = interpreter_m3.get_tensor(output_details[0]['index'])
                 i_pred = int(np.argmax(y_pred[0]))
-                # conf = y_pred[i_pred]
+                conf = y_pred[0][i_pred]
 
-                # if conf < 0.8:
-                #     continue
+                if conf < 0.8:
+                    continue
 
                 action = actions_m3[i_pred]
 
@@ -178,10 +177,10 @@ while cap.isOpened():
                 interpreter_m4.invoke()
                 y_pred = interpreter_m4.get_tensor(output_details[0]['index'])
                 i_pred = int(np.argmax(y_pred[0]))
-                # conf = y_pred[i_pred]
+                conf = y_pred[0][i_pred]
 
-                # if conf < 0.8:
-                #     continue
+                if conf < 0.8:
+                    continue
 
                 action = actions_m4[i_pred]
 
@@ -192,10 +191,10 @@ while cap.isOpened():
                 interpreter_m5.invoke()
                 y_pred = interpreter_m5.get_tensor(output_details[0]['index'])
                 i_pred = int(np.argmax(y_pred[0]))
-                # conf = y_pred[i_pred]
+                conf = y_pred[0][i_pred]
 
-                # if conf < 0.8:
-                #     continue
+                if conf < 0.8:
+                    continue
 
                 action = actions_m5[i_pred]
             
@@ -207,7 +206,7 @@ while cap.isOpened():
                 continue
 
             this_action = ' '
-            if action_seq[-1] == action_seq[-2]:
+            if action_seq[-1] == action_seq[-2] == action_seq[-3]:
                 this_action = action
 
                 if last_action != this_action:

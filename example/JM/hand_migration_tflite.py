@@ -1,6 +1,7 @@
 import cv2
 import mediapipe as mp
 import numpy as np
+import tensorflow as tf
 from tensorflow.keras.models import load_model
 import math
 from PIL import ImageFont, ImageDraw, Image
@@ -9,30 +10,42 @@ from PIL import ImageFont, ImageDraw, Image
 
 ## m1 방향에 따라 분류(손바닥 위)
 # actions_m1 = ['a','ae','ya','yae','i']
-actions_m1 = ['ㅏ','ㅐ','ㅑ','ㅒ','ㅣ']
-model_m1 = load_model('models/M/model_m1.h5')
+actions_m1 = ['ㅁ','ㅂ','ㅍ','ㅇ','ㅏ','ㅐ','ㅑ','ㅒ','ㅣ']
+# model_m1 = load_model('models/M/model_m1.h5')
+interpreter_m1 = tf.lite.Interpreter(model_path="models/JM/jsy_jm_model3.tflite")
+interpreter_m1.allocate_tensors()
 
 ## m2 방향에 따라 분류(손등 위)
 # actions_m2 = ['o','oe','yo']
-actions_m2 = ['ㅗ','ㅚ','ㅛ']
-model_m2 = load_model('models/M/model_m2.h5')
+actions_m2 = ['o','ㅗ','ㅚ','ㅛ']
+# model_m2 = load_model('models/M/model_m2.h5')
+interpreter_m2 = tf.lite.Interpreter(model_path="models/JM/jsy_jm_model4.tflite")
+interpreter_m2.allocate_tensors()
 
 ## m3 방향에 따라 분류(아래)
 # actions_m3 = ['u','wi','yu']
-actions_m3 = ['ㅜ','ㅟ','ㅠ']
-model_m3 = load_model('models/M/model_m3.h5')
+actions_m3 = ['ㄱ','ㅈ','ㅊ','ㅋ','ㅅ','ㅜ','ㅟ','ㅠ']
+# model_m3 = load_model('models/M/model_m3.h5')
+interpreter_m3 = tf.lite.Interpreter(model_path="models/JM/jsy_jm_model1.tflite")
+interpreter_m3.allocate_tensors()
 
 ## m4 방향에 따라 분류 (앞)
 # actions_m4 = ['eo','e','yeo','ye']
-actions_m4 = ['ㅓ','ㅔ','ㅕ','ㅖ']
-model_m4 = load_model('models/M/model_m4.h5')
+actions_m4 = ['ㅎ','ㅓ','ㅔ','ㅕ','ㅖ']
+# model_m4 = load_model('models/M/model_m4.h5')
+interpreter_m4 = tf.lite.Interpreter(model_path="models/JM/jsy_jm_model5.tflite")
+interpreter_m4.allocate_tensors()
 
 ## m5 방향에 따라 분류 (옆)
 # actions_m5 = ['eu', 'ui']  
-actions_m5 = ['ㅡ', 'ㅢ']  
-model_m5 = load_model('models/M/model_m5.h5')
+actions_m5 = ['ㄴ','ㄷ','ㄹ','ㅌ','ㅡ','ㅢ']  
+# model_m5 = load_model('models/M/model_m5.h5')
+interpreter_m5 = tf.lite.Interpreter(model_path="models/JM/jsy_jm_model2.tflite")
+interpreter_m5.allocate_tensors()
 
-
+# Get input and output tensors.
+input_details = interpreter_m1.get_input_details()
+output_details = interpreter_m1.get_output_details()
 
 
 # -------------------------------------------------- #
@@ -57,6 +70,7 @@ this_action = ''
 select_model = ''
 
 wrist_angle = 0
+confidence = 0.9
 
 while cap.isOpened():
     ret, img = cap.read()
@@ -65,30 +79,45 @@ while cap.isOpened():
 
     h, w, c = img.shape
 
-    img = cv2.flip(img, 1)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     result = hands.process(img)
     img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
 
     if result.multi_hand_landmarks is not None:
         for res in result.multi_hand_landmarks:
-            joint = np.zeros((21, 4))
+            joint = np.zeros((21, 2))
+            x_right_label = []
+            y_right_label = []
             for j, lm in enumerate(res.landmark):
-                joint[j] = [lm.x, lm.y, lm.z, lm.visibility]
+                joint[j] = [lm.x, lm.y] # z축 제거, visibility 제거
                 if j == 0:
                     lmlist_0_x, lmlist_0_y = int(lm.x*w), int(lm.y*h)
                 elif j == 5:
                     lmlist_5_x, lmlist_5_y = int(lm.x*w), int(lm.y*h)
                 elif j == 17:
                     lmlist_17_x, lmlist_17_y = int(lm.x*w), int(lm.y*h)
-
+            
             radian = math.atan2(lmlist_17_y-lmlist_0_y,lmlist_17_x-lmlist_0_x)-math.atan2(lmlist_5_y-lmlist_0_y,lmlist_5_x-lmlist_0_x)
-            wrist_angle = int(math.degrees(radian))
+            wrist_angle = 360 - int(math.degrees(radian))
 
             if wrist_angle < 0:
                 wrist_angle += 360
+            # print("wrist_angle : ",wrist_angle)
+            for i in range(21):
+                x_right_label.append(joint[i][0] - joint[0][0])
+                y_right_label.append(joint[i][1] - joint[0][1])
 
-            print("wrist_angle : ", wrist_angle)
+            if max(x_right_label) == min(x_right_label):
+                x_right_scale = x_right_label
+            else:
+                x_right_scale = x_right_label/(max(x_right_label)-min(x_right_label))
+                
+            if max(y_right_label) == min(y_right_label):
+                y_right_scale = y_right_label
+            else:
+                y_right_scale = y_right_label/(max(y_right_label)-min(y_right_label))
+            full_scale = np.concatenate([x_right_scale.flatten(), y_right_scale.flatten()])
+
             # Compute angles between joints
             v1 = joint[[0,1,2,3,0,5,6,7,0,9,10,11,0,13,14,15,0,17,18,19], :3] # Parent joint
             v2 = joint[[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20], :3] # Child joint
@@ -103,7 +132,7 @@ while cap.isOpened():
 
             angle = np.degrees(angle) # Convert radian to degree
 
-            d = np.concatenate([joint.flatten(), angle])
+            d = np.concatenate([full_scale, angle])
 
             seq.append(d)
 
@@ -113,83 +142,94 @@ while cap.isOpened():
                 continue
 
             input_data = np.expand_dims(np.array(seq[-seq_length:], dtype=np.float32), axis=0)
+            input_data = np.array(input_data, dtype=np.float32)
 
-            if lmlist_5_x < lmlist_17_x and lmlist_5_y < lmlist_0_y and lmlist_17_y < lmlist_0_y:
+            if lmlist_5_x > lmlist_17_x and lmlist_5_y < lmlist_0_y and lmlist_17_y < lmlist_0_y:
                 # print("model m1")
                 select_model = "m1"
-                y_pred = model_m1.predict(input_data).squeeze()
-                i_pred = int(np.argmax(y_pred))
-                conf = y_pred[i_pred]
+                interpreter_m1.set_tensor(input_details[0]['index'], input_data)
+                interpreter_m1.invoke()
+                y_pred = interpreter_m1.get_tensor(output_details[0]['index'])
+                i_pred = int(np.argmax(y_pred[0]))
+                conf = y_pred[0][i_pred]
                 
-                if conf < 0.8:
+                if conf < confidence:
                     continue
 
                 action = actions_m1[i_pred]
 
-            elif lmlist_5_x > lmlist_17_x and lmlist_5_y < lmlist_0_y and lmlist_17_y < lmlist_0_y:
+            elif lmlist_5_x < lmlist_17_x and lmlist_5_y < lmlist_0_y and lmlist_17_y < lmlist_0_y:
                 # print("model m2")
                 select_model = "m2"
 
-                y_pred = model_m2.predict(input_data).squeeze()
-                i_pred = int(np.argmax(y_pred))
-                conf = y_pred[i_pred]
+                interpreter_m2.set_tensor(input_details[0]['index'], input_data)
+                interpreter_m2.invoke()
+                y_pred = interpreter_m2.get_tensor(output_details[0]['index'])
+                i_pred = int(np.argmax(y_pred[0]))
+                conf = y_pred[0][i_pred]
                 
-                if conf < 0.8:
+                if conf < confidence:
                     continue
 
                 action = actions_m2[i_pred]
 
-            elif lmlist_5_x < lmlist_17_x and lmlist_0_y < lmlist_5_y and lmlist_0_y < lmlist_17_y:
+            elif lmlist_5_x > lmlist_17_x and lmlist_0_y < lmlist_5_y and lmlist_0_y < lmlist_17_y:
                 # print("model m3")
                 select_model = "m3"
-                y_pred = model_m3.predict(input_data).squeeze()
+                interpreter_m3.set_tensor(input_details[0]['index'], input_data)
+                interpreter_m3.invoke()
+                y_pred = interpreter_m3.get_tensor(output_details[0]['index'])
+                i_pred = int(np.argmax(y_pred[0]))
+                conf = y_pred[0][i_pred]
 
-                i_pred = int(np.argmax(y_pred))
-                conf = y_pred[i_pred]
-
-                if conf < 0.8:
+                if conf < confidence:
                     continue
 
                 action = actions_m3[i_pred]
 
-            elif lmlist_5_x < lmlist_0_x and lmlist_5_y < lmlist_17_y and wrist_angle <= 300:
+            elif lmlist_5_x > lmlist_0_x and lmlist_5_y < lmlist_17_y and (wrist_angle <= 300 or wrist_angle >= 350):
                 # print("model m4")
                 select_model = "m4"
-                y_pred = model_m4.predict(input_data).squeeze()
-                i_pred = int(np.argmax(y_pred))
-                conf = y_pred[i_pred]
+                interpreter_m4.set_tensor(input_details[0]['index'], input_data)
+                interpreter_m4.invoke()
+                y_pred = interpreter_m4.get_tensor(output_details[0]['index'])
+                i_pred = int(np.argmax(y_pred[0]))
+                conf = y_pred[0][i_pred]
 
-                if conf < 0.8:
+                if conf < confidence:
                     continue
 
                 action = actions_m4[i_pred]
 
-            elif lmlist_5_x < lmlist_0_x and lmlist_5_y < lmlist_17_y:
+            elif lmlist_5_x > lmlist_0_x and lmlist_5_y < lmlist_17_y:
                 # print("model m5")
                 select_model = "m5"
-                y_pred = model_m5.predict(input_data).squeeze()
-                i_pred = int(np.argmax(y_pred))
-                conf = y_pred[i_pred]
+                interpreter_m5.set_tensor(input_details[0]['index'], input_data)
+                interpreter_m5.invoke()
+                y_pred = interpreter_m5.get_tensor(output_details[0]['index'])
+                i_pred = int(np.argmax(y_pred[0]))
+                conf = y_pred[0][i_pred]
 
-                if conf < 0.8:
+                if conf < confidence:
                     continue
 
                 action = actions_m5[i_pred]
             
-            
+            print(conf)
 
             action_seq.append(action)
 
             if len(action_seq) < 3:
                 continue
 
-            this_action = '?'
+            this_action = ' '
             if action_seq[-1] == action_seq[-2] == action_seq[-3]:
                 this_action = action
 
                 if last_action != this_action:
                     last_action = this_action
                 
+    img = cv2.flip(img, 1)
 
     # Get status box
     cv2.rectangle(img, (0,0), (260, 60), (245, 117, 16), -1)

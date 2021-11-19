@@ -1,6 +1,6 @@
 import cv2
 import os, sys
-sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(os.path.dirname(__file__)))))
 import modules.HolisticModule as hm
 from collections import Counter
 
@@ -13,10 +13,16 @@ detector = hm.HolisticDetector()
 
 cnt10 = 0
 text_cnt = 0
+dcnt = 0
+min_detec = 10
+max_detec = 30
+num_lst = [11, 15, 16]
+
+flag = False
 
 while True:
     number = 0
-    number2 = 0
+
     # defalut BGR img
     success, img = cap.read()
     # mediapipe를 거친 이미지 생성 -> img
@@ -35,8 +41,15 @@ while True:
         # 엄지 끝과 검지 끝의 거리 측정
         thumb_index_length = detector.findLength_rh_rh(4, 8)
 
-        # print(right_hand_fingersUp_list_a0, right_hand_fingersUp_list_a1)
-
+        index_finger_angle_1 = int(detector.findHandAngle(img, 8, 9, 5, draw=False))
+        index_finger_angle_2 = int(detector.findHandAngle(img, 8, 13, 5, draw=False))
+        index_finger_angle_3 = int(detector.findHandAngle(img, 8, 17, 5, draw=False))
+        total_index_angle = index_finger_angle_1 + index_finger_angle_2 + index_finger_angle_3
+        
+        middle_finger_angle_1 = 360 - int(detector.findHandAngle(img, 12, 5, 9, draw=False))
+        middle_finger_angle_2 = int(detector.findHandAngle(img, 12, 13, 9, draw=False))
+        middle_finger_angle_3 = int(detector.findHandAngle(img, 12, 17, 9, draw=False))
+        total_middle_angle = middle_finger_angle_1 + middle_finger_angle_2 + middle_finger_angle_3
         
         # 손바닥이 보임, 수향이 위쪽
         if right_hand_lmList[5][1] > right_hand_lmList[17][1] and right_hand_lmList[4][2] > right_hand_lmList[8][2]:
@@ -56,10 +69,10 @@ while True:
             if right_hand_fingersUp_list_a0 == [1, 0, 0, 0, 0]:
                 number = 5
             # 손가락을 살짝 구부려 10과 20 구분
-            if right_hand_fingersUp_list_a0[0] == 0 and right_hand_fingersUp_list_a0[2:] == [0, 0, 0] and right_hand_lmList[8][2] + 20 >= right_hand_lmList[7][2]:
+            if right_hand_fingersUp_list_a0[0] == 0 and right_hand_fingersUp_list_a0[2:] == [0, 0, 0] and total_index_angle < 140:
                 number = 10
                 cnt10 += 1
-            elif right_hand_fingersUp_list_a0[0] == 0 and right_hand_fingersUp_list_a0[3:] == [0, 0] and right_hand_lmList[8][2] + 20 >= right_hand_lmList[7][2] and right_hand_lmList[12][2] + 20 >= right_hand_lmList[11][2]:
+            elif right_hand_fingersUp_list_a0[0] == 0 and right_hand_fingersUp_list_a0[3:] == [0, 0] and total_index_angle < 145 and total_middle_angle < 165:
                 number = 20
 
         # 손등이 보임, 수향이 몸 안쪽으로 향함, 엄지가 들려 있음
@@ -92,18 +105,48 @@ while True:
                 elif right_hand_fingersUp_list_a1[2:] == [1, 1, 1] and right_hand_lmList[8][1] <= right_hand_lmList[6][1] + 20:
                     number = 19    
 
-        if cnt10 >= 10:
+        if cnt10 > (max_detec - min_detec):
+            number = 10
+            flag = True
+            # print("clear")
+            # dcnt = 0
+            
+            
+        elif cnt10 > min_detec:
             if right_hand_lmList[5][1] > right_hand_lmList[17][1] and right_hand_lmList[4][2] > right_hand_lmList[8][2]:
                 if right_hand_fingersUp_list_a0 == [0, 1, 0, 0, 0] and right_hand_lmList[8][2] < right_hand_lmList[7][2]:
-                    number = 11
-            if right_hand_lmList[5][1] > right_hand_lmList[17][1]:
+                    dcnt += 1
+                    number = 0
+                    if max_detec > dcnt > min_detec:
+                        number = 11
+                    elif dcnt > max_detec+10:
+                        number = 0
+                        cnt10 = 0
+                        dcnt = 0
+                        # print("clear")
+            elif right_hand_lmList[5][1] > right_hand_lmList[17][1]:
                 if right_hand_fingersUp_list_a0 == [1, 0, 0, 0, 0]:
-                    number = 15
-            if right_hand_lmList[5][2] < right_hand_lmList[17][2] and right_hand_lmList[4][2] < right_hand_lmList[8][2]:
+                    dcnt += 1
+                    number = 0
+                    if max_detec > dcnt > min_detec:
+                        number = 15
+                    elif dcnt > max_detec+10:
+                        number = 0
+                        cnt10 = 0
+                        dcnt = 0
+            elif right_hand_lmList[5][2] < right_hand_lmList[17][2] and right_hand_lmList[4][2] < right_hand_lmList[8][2]:
                 if right_hand_fingersUp_list_a1 == [1, 1, 0, 0, 0]:
-                    number = 16
-
-
+                    dcnt += 1
+                    number = 0
+                    if max_detec > dcnt > min_detec:
+                        number = 16
+                    elif dcnt > max_detec+10:
+                        number = 0
+                        cnt10 = 0
+                        dcnt = 0
+                        
+        if number in num_lst:
+            flag = True
     # Get status box
     cv2.rectangle(img, (0,0), (100, 60), (245, 117, 16), -1)
 
@@ -114,35 +157,29 @@ while True:
     if number != 0:
         cv2.putText(img, str(number)
                     , (25,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
-        num_lst = [11, 15, 16]
-        # print(text_cnt, number)
 
-        if number in num_lst:
+        if flag:
             text_cnt += 1
-            if text_cnt % 20 == 0:
+            if text_cnt % max_detec == 0:
                 cnt10 = 0
-                cnt1 = 0
-                cnt5 = 0 
-                cnt6 = 0
                 text_cnt = 0
-            
-    # 실시간
-    # Get status box
-    # cv2.rectangle(img, (100,0), (200, 60), (0, 117, 16), -1)
-
-    # cv2.putText(img, 'real-time'
-    #             , (115,18), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
-    # if number != 0:
-    #     cv2.putText(img, str(number)
-    #                 , (130,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
-
+                dcnt = 0
+                flag = False
+    
+    # 감지 안되었을 때
+    if len(right_hand_lmList) == 0:
+        cnt10 = 0
+        text_cnt = 0
+        dcnt = 0
+        flag = False
+                    
     # img를 우리에게 보여주는 부분
     cv2.imshow("Image", img)
 
+        
     # ESC 키를 눌렀을 때 창을 모두 종료하는 부분
     if cv2.waitKey(1) & 0xFF == 27:
         break 
 
 cap.release()
 cv2.destroyAllWindows()
-    

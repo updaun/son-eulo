@@ -4,7 +4,7 @@ import numpy as np
 import time, os
 from PIL import ImageFont, ImageDraw, Image
 
-actions = ['ㄱ', 'ㄴ', 'ㄷ', 'ㄹ']
+actions = ['ㄱ','ㅅ','ㅈ','ㅊ','ㅋ']
 
 seq_length = 30
 secs_for_action = 30
@@ -59,33 +59,52 @@ while cap.isOpened():
             if result.multi_hand_landmarks is not None:
                 for res in result.multi_hand_landmarks:
                     joint = np.zeros((21, 2)) # 넘파이 배열 크기 변경
+                    x_right_label = []
+                    y_right_label = []
                     for j, lm in enumerate(res.landmark):
                         joint[j] = [lm.x, lm.y] # z축 제거, visibility 제거
+                        
+                    for i in range(21):
+                        x_right_label.append(joint[i][0] - joint[0][0])
+                        y_right_label.append(joint[i][1] - joint[0][1])
 
+                    if max(x_right_label) == min(x_right_label):
+                        x_right_scale = x_right_label
+                    else:
+                        x_right_scale = x_right_label/(max(x_right_label)-min(x_right_label))
+                        
+                    if max(y_right_label) == min(y_right_label):
+                        y_right_scale = y_right_label
+                    else:
+                        y_right_scale = y_right_label/(max(y_right_label)-min(y_right_label))
+                    full_scale = np.concatenate([x_right_scale.flatten(), y_right_scale.flatten()])
+                    # print(full_scale)
                     # Compute angles between joints
-                    v1 = joint[[0,1,2,3,0,5,6,7,0,9,10,11,0,13,14,15,0,17,18,19], :3] # Parent joint
+                    v1 = joint[[0,1,2,3,0,5,6,7,0, 9,10,11, 0,13,14,15, 0,17,18,19], :3] # Parent joint
                     v2 = joint[[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20], :3] # Child joint
                     v = v2 - v1 # [20, 3]
                     # Normalize v
                     v = v / np.linalg.norm(v, axis=1)[:, np.newaxis]
-                    print(v[0])
+                    # print(v[0])
                     # Get angle using arcos of dot product
                     angle = np.arccos(np.einsum('nt,nt->n',
-                        v[[0,1,2,4,5,6,8,9,10,12,13,14,16,17,18],:], 
+                        v[[0,1,2,4,5,6,8, 9,10,12,13,14,16,17,18],:], 
                         v[[1,2,3,5,6,7,9,10,11,13,14,15,17,18,19],:])) # [15,]
 
-                    angle = np.round(np.degrees(angle) / 360, 6) # Convert radian to degree
+                    angle = np.degrees(angle) # Convert radian to degree
 
                     angle_label = np.array([angle], dtype=np.float32)
                     angle_label = np.append(angle_label, idx)
-
-                    d = np.concatenate([joint.flatten(), angle_label])
-
+                    print(angle)
+                    # d = np.concatenate([joint.flatten(), angle_label])
+                    d = np.concatenate([full_scale, angle_label])
+                    # print(len(d))
+                    # print(d)
                     data.append(d)
 
                     mp_drawing.draw_landmarks(img, res, mp_hands.HAND_CONNECTIONS)
 
-            img = cv2.flip(img, 1)
+            # img = cv2.flip(img, 1)
 
             cv2.imshow('img', img)
             if cv2.waitKey(1) == ord('q'):
