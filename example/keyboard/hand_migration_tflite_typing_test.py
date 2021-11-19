@@ -77,7 +77,7 @@ cnt = 0
 jamo_li = []
 jamo_join_li = []
 
-M = ['ㅏ', 'ㅐ', 'ㅑ', 'ㅒ', 'ㅣ', 'ㅗ', 'ㅚ', 'ㅛ', 'ㅜ', 'ㅟ', 'ㅠ', 'ㅓ', 'ㅔ', 'ㅕ', 'ㅖ', 'ㅡ', 'ㅢ']
+M = ['ㅏ', 'ㅐ', 'ㅑ', 'ㅒ', 'ㅣ', 'ㅗ', 'ㅚ', 'ㅛ', 'ㅜ', 'ㅟ', 'ㅠ', 'ㅓ', 'ㅔ', 'ㅕ', 'ㅖ', 'ㅡ', 'ㅢ', 'ㅘ', 'ㅙ', 'ㅝ', 'ㅞ']
 J = ["ㄱ", "ㅅ", "ㅈ", "ㅊ", "ㅋ", "ㄴ", "ㄷ", "ㄹ", "ㅌ", "ㅁ", "ㅂ", "ㅍ", "ㅇ", "ㅎ", "ㄲ", "ㅆ", "ㅉ", "ㄸ", "ㅃ"]
 JJ = ["ㄱ", "ㅅ", "ㅈ", "ㄷ", "ㅂ"]
 JJ_dict = {"ㄱ":"ㄲ",
@@ -85,44 +85,47 @@ JJ_dict = {"ㄱ":"ㄲ",
            "ㅈ":"ㅉ",
            "ㄷ":"ㄸ",
            "ㅂ":"ㅃ"}
+MM_lst = ['ㅗ', 'ㅜ']
+MM_dict = {"ㅏ":"ㅘ",
+           "ㅐ":"ㅙ",
+           "ㅓ":"ㅝ",
+           "ㅔ":"ㅞ"}
 
 while cap.isOpened():
     ret, img = cap.read()
-    if not this_action == '':
+    if this_action not in ['', ' ']:
         cnt += 1
         jamo_li.append(this_action)
         print(cnt, jamo_li)
-        if cnt >= 45:
+        if cnt >= 30:
             cnt = 0
             jamo_dict = {}
             for jamo in jamo_li:
-                if jamo != ' ' and jamo != '':
-                    jamo_dict[jamo] = jamo_li.count(jamo)
-            
-            jamo_dict = sorted(jamo_dict.items(), key=lambda x:x[1], reverse=True) # (ㄱ, 5), (ㄴ, 4)
+                jamo_dict[jamo] = jamo_li.count(jamo)
+            jamo_dict = sorted(jamo_dict.items(), key=lambda x:x[1], reverse=True)
             print("jamo_dict", jamo_dict)
-            if jamo_dict and jamo_dict[0][1] >= 15:
+            if jamo_dict and jamo_dict[0][1] >= 10:
                 tmp = jamo_dict[0][0]
                 if jamo_join_li:
-                    if tmp in J: # 자음
-                        if jamo_join_li[-1] in M: # [-1]모음 - 자음 (=> 받침)
+                    if tmp in J:
+                        # 모음 - 자음 : 받침
+                        if jamo_join_li[-1] in M: 
                             jamo_join_li.append(tmp)
-                        else: # 자음 - 자음
-                            if tmp == jamo_join_li[-1]:
-                                if tmp in JJ: # 쌍자음
-                                    jamo_join_li.append(JJ_dict[tmp])
-                                else: # ex) '안녕'
-                                    jamo_join_li.append(tmp)
-                            else:
-                                if len(jamo_join_li) >= 2: # 받침(뒷)
-                                    if jamo_join_li[-2] in M and jamo_join_li[-1] in J:
-                                        jamo_join_li.append(tmp)
-                    elif tmp in M: # 모음
+                        # 자음 - 자음
+                        elif len(jamo_join_li) >= 2:
+                            if jamo_join_li[-2] in M and jamo_join_li[-1] in J:
+                                jamo_join_li.append(tmp)
+                    elif tmp in M:
+                        # 자음 - 모음
                         if jamo_join_li[-1] in J:
                             jamo_join_li.append(tmp)
-                else: # 맨 처음 시작할 때 자음부터 시작
-                    if tmp in J:
-                        jamo_join_li.append(tmp)
+                        # 모음 - 모음 : 이중 모음
+                        elif jamo_join_li[-1] in MM_lst and tmp in MM_dict.keys():
+                            jamo_join_li.pop()
+                            jamo_join_li.append(MM_dict[tmp])
+                # 맨 처음 시작할 때 자음부터 시작
+                elif tmp in J:
+                    jamo_join_li.append(tmp)
             
             jamo_li = []
             print("jamo_join_li", jamo_join_li)
