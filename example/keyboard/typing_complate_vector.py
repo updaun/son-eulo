@@ -25,35 +25,38 @@ from hangul_utils import split_syllable_char, split_syllables, join_jamos
 # actions_m1 = ['a','ae','ya','yae','i']
 actions_m1 = ['ㅁ','ㅂ','ㅍ','ㅇ','ㅏ','ㅐ','ㅑ','ㅒ','ㅣ']
 # model_m1 = load_model('models/M/model_m1.h5')
-interpreter_m1 = tf.lite.Interpreter(model_path="models/JM/jsy_jm_model3.tflite")
+interpreter_m1 = tf.lite.Interpreter(model_path="models/JM/vector_norm/preprocessing_model1.tflite")
 interpreter_m1.allocate_tensors()
 
 ## m2 방향에 따라 분류(손등 위)
 # actions_m2 = ['o','oe','yo']
-actions_m2 = ['o','ㅗ','ㅚ','ㅛ']
+actions_m2 = ['ㅇ','ㅗ','ㅚ','ㅛ']
 # model_m2 = load_model('models/M/model_m2.h5')
-interpreter_m2 = tf.lite.Interpreter(model_path="models/JM/jsy_jm_model4.tflite")
+interpreter_m2 = tf.lite.Interpreter(model_path="models/JM/vector_norm/preprocessing_model2.tflite")
 interpreter_m2.allocate_tensors()
 
 ## m3 방향에 따라 분류(아래)
 # actions_m3 = ['u','wi','yu']
-actions_m3 = ['ㄱ','ㅈ','ㅊ','ㅋ','ㅅ','ㅜ','ㅟ','ㅠ']
+# actions_m3 = ['ㄱ','ㅈ','ㅊ','ㅋ','ㅅ','ㅜ','ㅟ','ㅠ']
+actions_m3 = ['ㄱ','ㅈ','ㅊ','ㅋ','ㅅ','ㅜ','ㅟ']
 # model_m3 = load_model('models/M/model_m3.h5')
-interpreter_m3 = tf.lite.Interpreter(model_path="models/JM/jsy_jm_model1.tflite")
+interpreter_m3 = tf.lite.Interpreter(model_path="models/JM/vector_norm/preprocessing_model3.tflite")
 interpreter_m3.allocate_tensors()
 
 ## m4 방향에 따라 분류 (앞)
 # actions_m4 = ['eo','e','yeo','ye']
-actions_m4 = ['ㅎ','ㅓ','ㅔ','ㅕ','ㅖ']
+# actions_m4 = ['ㅎ','ㅓ','ㅔ','ㅕ','ㅖ']
+actions_m4 = ['ㅎ']
 # model_m4 = load_model('models/M/model_m4.h5')
-interpreter_m4 = tf.lite.Interpreter(model_path="models/JM/jsy_jm_model5.tflite")
+interpreter_m4 = tf.lite.Interpreter(model_path="models/JM/vector_norm/preprocessing_model4.tflite")
 interpreter_m4.allocate_tensors()
 
 ## m5 방향에 따라 분류 (옆)
 # actions_m5 = ['eu', 'ui']  
-actions_m5 = ['ㄴ','ㄷ','ㄹ','ㅌ','ㅡ','ㅢ']  
+# actions_m5 = ['ㄴ','ㄷ','ㄹ','ㅌ','ㅡ','ㅢ']  
+actions_m5 = ['ㄴ','ㄷ','ㄹ','ㅡ','ㅢ']  
 # model_m5 = load_model('models/M/model_m5.h5')
-interpreter_m5 = tf.lite.Interpreter(model_path="models/JM/jsy_jm_model2.tflite")
+interpreter_m5 = tf.lite.Interpreter(model_path="models/JM/vector_norm/preprocessing_model5.tflite")
 interpreter_m5.allocate_tensors()
 
 # Get input and output tensors.
@@ -203,38 +206,22 @@ def main():
         if result.multi_hand_landmarks is not None:
             for res in result.multi_hand_landmarks:
                 joint = np.zeros((21, 2))
-                x_right_label = []
-                y_right_label = []
                 for j, lm in enumerate(res.landmark):
-                    joint[j] = [lm.x, lm.y] # z축 제거, visibility 제거
+                    joint[j] = [lm.x, lm.y]
                     if j == 0:
                         lmlist_0_x, lmlist_0_y = int(lm.x*w), int(lm.y*h)
                     elif j == 5:
                         lmlist_5_x, lmlist_5_y = int(lm.x*w), int(lm.y*h)
                     elif j == 17:
                         lmlist_17_x, lmlist_17_y = int(lm.x*w), int(lm.y*h)
-                
+
                 radian = math.atan2(lmlist_17_y-lmlist_0_y,lmlist_17_x-lmlist_0_x)-math.atan2(lmlist_5_y-lmlist_0_y,lmlist_5_x-lmlist_0_x)
                 wrist_angle = 360 - int(math.degrees(radian))
 
                 if wrist_angle < 0:
                     wrist_angle += 360
-                # print("wrist_angle : ",wrist_angle)
-                for i in range(21):
-                    x_right_label.append(joint[i][0] - joint[0][0])
-                    y_right_label.append(joint[i][1] - joint[0][1])
 
-                if max(x_right_label) == min(x_right_label):
-                    x_right_scale = x_right_label
-                else:
-                    x_right_scale = x_right_label/(max(x_right_label)-min(x_right_label))
-                    
-                if max(y_right_label) == min(y_right_label):
-                    y_right_scale = y_right_label
-                else:
-                    y_right_scale = y_right_label/(max(y_right_label)-min(y_right_label))
-                full_scale = np.concatenate([x_right_scale.flatten(), y_right_scale.flatten()])
-
+                print("wrist_angle : ", wrist_angle)
                 # Compute angles between joints
                 v1 = joint[[0,1,2,3,0,5,6,7,0,9,10,11,0,13,14,15,0,17,18,19], :3] # Parent joint
                 v2 = joint[[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20], :3] # Child joint
@@ -249,7 +236,7 @@ def main():
 
                 angle = np.degrees(angle) # Convert radian to degree
 
-                d = np.concatenate([full_scale, angle])
+                d = np.concatenate([v.flatten(), angle])
 
                 seq.append(d)
 
@@ -269,7 +256,6 @@ def main():
                     y_pred = interpreter_m1.get_tensor(output_details[0]['index'])
                     i_pred = int(np.argmax(y_pred[0]))
                     conf = y_pred[0][i_pred]
-                    
                     if conf < confidence:
                         continue
 
@@ -306,18 +292,19 @@ def main():
 
                 elif lmlist_5_x > lmlist_0_x and lmlist_5_y < lmlist_17_y and (wrist_angle <= 300 or wrist_angle >= 350):
                     # print("model m4")
-                    select_model = "m4"
-                    interpreter_m4.set_tensor(input_details[0]['index'], input_data)
-                    interpreter_m4.invoke()
-                    y_pred = interpreter_m4.get_tensor(output_details[0]['index'])
-                    i_pred = int(np.argmax(y_pred[0]))
-                    conf = y_pred[0][i_pred]
+                    # select_model = "m4"
+                    # interpreter_m4.set_tensor(input_details[0]['index'], input_data)
+                    # interpreter_m4.invoke()
+                    # y_pred = interpreter_m4.get_tensor(output_details[0]['index'])
+                    # i_pred = int(np.argmax(y_pred[0]))
+                    # conf = y_pred[0][i_pred]
 
-                    if conf < confidence:
-                        continue
+                    # if conf < confidence:
+                    #     continue
 
-                    action = actions_m4[i_pred]
-
+                    # action = actions_m4[i_pred]
+                    pass
+                
                 elif lmlist_5_x > lmlist_0_x and lmlist_5_y < lmlist_17_y:
                     # print("model m5")
                     select_model = "m5"
@@ -332,7 +319,7 @@ def main():
 
                     action = actions_m5[i_pred]
                 
-                # print(conf)
+                
 
                 action_seq.append(action)
 
