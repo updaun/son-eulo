@@ -2,9 +2,7 @@ import cv2
 import copy
 import csv
 import itertools
-from collections import Counter
-from collections import deque
-import itertools
+from collections import Counter, deque
 
 import mediapipe as mp
 import numpy as np
@@ -82,7 +80,7 @@ def main():
     jamo_li = deque()
     jamo_join_li = deque()
 
-    status_cnt_conf = 30
+    status_cnt_conf = 20
     status_lst = deque(maxlen=status_cnt_conf//2)
 
     M = ['ㅏ', 'ㅐ', 'ㅑ', 'ㅒ', 'ㅣ', 'ㅗ', 'ㅚ', 'ㅛ', 'ㅜ', 'ㅟ', 'ㅠ', 'ㅓ', 'ㅔ', 'ㅕ', 'ㅖ', 'ㅡ', 'ㅢ', 'ㅘ', 'ㅙ', 'ㅝ', 'ㅞ']
@@ -94,6 +92,7 @@ def main():
         "ㄷ":"ㄸ",
         "ㅂ":"ㅃ"
         }
+    JJ_not_support = ['ㅈ', 'ㅉ', 'ㄷ', 'ㄸ', 'ㅂ', 'ㅃ']
     MM_lst = ['ㅗ', 'ㅜ']
     MM_dict = {
         "ㅏ":"ㅘ",
@@ -139,7 +138,6 @@ def main():
             this_action = ''
             print(cnt, jamo_li)
             if cnt >= status_cnt_conf:
-                cnt = 0
                 jamo_dict = {}
                 for jamo in jamo_li:
                     jamo_dict[jamo] = jamo_li.count(jamo)
@@ -150,36 +148,46 @@ def main():
                     if jamo_join_li:
                         print("tmp", tmp)
                         if tmp in J:
-                            # 자음 - 같은 자음 : 쌍자음
+                            # 쌍자음
                             if tmp in JJ_dict.keys() and 'Move' in deque(itertools.islice(status_lst, int((status_cnt_conf//2)*0.3), (status_cnt_conf//2)-1)):
                                 if len(jamo_join_li) >= 2:
                                     if jamo_join_li[-2] in M or jamo_join_li[-1] in M:
-                                        jamo_join_li.append(JJ_dict[tmp])
+                                        if jamo_join_li[-1] not in JJ_not_support:
+                                            jamo_join_li.append(JJ_dict[tmp])
+                                            print("1======================")
                                 else:
                                     jamo_join_li.append(JJ_dict[tmp])
+                                    print("2======================")
                             # 모음 - 자음
                             elif jamo_join_li[-1] in M: 
                                 jamo_join_li.append(tmp)
+                                print("3======================")
                             # 자음 - 자음
                             elif len(jamo_join_li) >= 2:
-                                if jamo_join_li[-2] in M and jamo_join_li[-1] in J:
+                                if jamo_join_li[-2] in M and jamo_join_li[-1] in J and jamo_join_li[-1] not in JJ_not_support:
                                     jamo_join_li.append(tmp)
+                                    print("4======================")
                         elif tmp in M:
                             # 자음 - 모음
                             if jamo_join_li[-1] in J:
                                 jamo_join_li.append(tmp)
+                                print("5======================")
                             # 모음 - 모음 : 이중 모음
                             elif jamo_join_li[-1] in MM_lst and tmp in MM_dict.keys():
                                 jamo_join_li.pop()
                                 jamo_join_li.append(MM_dict[tmp])
+                                print("6======================")
                     # 맨 처음 시작할 때 자음부터 시작
                     elif tmp in J:
                         if tmp in JJ_dict.keys() and 'Move' in deque(itertools.islice(status_lst, int((status_cnt_conf//2)*0.3), (status_cnt_conf//2)-1)):
                             jamo_join_li.append(JJ_dict[tmp])
+                            print("7======================")
                         else:
                             jamo_join_li.append(tmp)
+                            print("8======================")
                 
                 jamo_li = []
+                cnt = -status_cnt_conf
                 print("jamo_join_li", jamo_join_li)
                 print("cnt", cnt)
                 
