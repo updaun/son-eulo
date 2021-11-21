@@ -152,51 +152,32 @@ def main():
                 print("jamo_dict", jamo_dict)
                 if jamo_dict and jamo_dict[0][1] >= int(status_cnt_conf*0.7):
                     tmp = jamo_dict[0][0]
-                    status_lst_slice = list(deque(itertools.islice(status_lst, int(status_cnt_conf*0.7), status_cnt_conf-1)))
+                    status_lst_slice = list(deque(itertools.islice(status_lst, int(status_cnt_conf*0.5), status_cnt_conf-1)))
+                    print("status_lst_slice", status_lst_slice)
                     if jamo_join_li:
                         print("tmp", tmp)
                         if tmp in J:
-                            # 쌍자음
                             if tmp in JJ_dict.keys():
+                                # 쌍자음
                                 if 'Move' in status_lst_slice: 
-                                    if len(jamo_join_li) >= 2:
-                                        if jamo_join_li[-2] in M or jamo_join_li[-1] in M:
-                                            if jamo_join_li[-1] not in JJ_not_support:
-                                                jamo_join_li.append(JJ_dict[tmp])
-                                                print("1======================")
-                                    else:
                                         jamo_join_li.append(JJ_dict[tmp])
-                                        print("2======================")
                                 else:
                                     jamo_join_li.append(tmp)
-                                    print("2.5======================")
-                            # 모음 - 자음
-                            elif jamo_join_li[-1] in M: 
+                            else:
                                 jamo_join_li.append(tmp)
-                                print("3======================")
-                            # 자음 - 자음
-                            elif len(jamo_join_li) >= 2:
-                                if jamo_join_li[-2] in M and jamo_join_li[-1] in J and jamo_join_li[-1] not in JJ_not_support:
-                                    jamo_join_li.append(tmp)
-                                    print("4======================")
                         elif tmp in M:
-                            # 자음 - 모음
-                            if jamo_join_li[-1] in J:
-                                jamo_join_li.append(tmp)
-                                print("5======================")
                             # 모음 - 모음 : 이중 모음
-                            elif jamo_join_li[-1] in MM_lst and tmp in MM_dict.keys():
+                            if jamo_join_li[-1] in MM_lst and tmp in MM_dict.keys():
                                 jamo_join_li.pop()
                                 jamo_join_li.append(MM_dict[tmp])
-                                print("6======================")
+                            else:
+                                jamo_join_li.append(tmp)
                     # 맨 처음 시작할 때 자음부터 시작
                     elif tmp in J:
                         if tmp in JJ_dict.keys() and 'Move' in status_lst_slice:
                             jamo_join_li.append(JJ_dict[tmp])
-                            print("7======================")
                         else:
                             jamo_join_li.append(tmp)
-                            print("8======================")
                 
                 jamo_li = []
                 cnt = -int(status_cnt_conf)
@@ -399,10 +380,16 @@ def main():
                 # print(cnt, status_lst)
 
         img = cv2.flip(img, 1)
-
-        st = split_syllables(jamo_join_li)
-        s2 = join_jamos(st)
-
+        
+        # 자음 모음 결합
+        s2_lst = list(join_jamos(split_syllables(jamo_join_li)))
+        if len(s2_lst) >= 2:
+            for i in s2_lst[:-1]:
+                if i in J or i in M:
+                    s2_lst.remove(i)
+                    jamo_join_li = s2_lst
+        s2_lst_remove = join_jamos(split_syllables(s2_lst))
+        
         # Get status box
         cv2.rectangle(img, (0,0), (1000, 60), (245, 117, 16), -1)
         
@@ -414,7 +401,7 @@ def main():
         font = ImageFont.truetype(fontpath, 35)
         draw = ImageDraw.Draw(img_pil)
         draw.text((20, 15), f'{this_action}', font=font, fill=(b,g,r,a))
-        draw.text((200, 15), f'{s2}', font=font, fill=(b,g,r,a))
+        draw.text((200, 15), f'{s2_lst_remove}', font=font, fill=(b,g,r,a))
         img = np.array(img_pil)
 
         # Display Probability
