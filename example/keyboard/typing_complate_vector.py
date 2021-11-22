@@ -25,14 +25,14 @@ from hangul_utils import split_syllable_char, split_syllables, join_jamos
 # actions_m1 = ['a','ae','ya','yae','i']
 actions_m1 = ['ㅁ','ㅂ','ㅍ','ㅇ','ㅏ','ㅐ','ㅑ','ㅒ','ㅣ']
 # model_m1 = load_model('models/M/model_m1.h5')
-interpreter_m1 = tf.lite.Interpreter(model_path="models/JM/vector_norm/preprocessing_model1.tflite")
+interpreter_m1 = tf.lite.Interpreter(model_path="models/JM/vector_norm/preprocessing_model1_seq10.tflite")
 interpreter_m1.allocate_tensors()
 
 ## m2 방향에 따라 분류(손등 위)
 # actions_m2 = ['o','oe','yo']
 actions_m2 = ['ㅇ','ㅗ','ㅚ','ㅛ']
 # model_m2 = load_model('models/M/model_m2.h5')
-interpreter_m2 = tf.lite.Interpreter(model_path="models/JM/vector_norm/preprocessing_model2.tflite")
+interpreter_m2 = tf.lite.Interpreter(model_path="models/JM/vector_norm/preprocessing_model2_seq10.tflite")
 interpreter_m2.allocate_tensors()
 
 ## m3 방향에 따라 분류(아래)
@@ -40,7 +40,7 @@ interpreter_m2.allocate_tensors()
 # actions_m3 = ['ㄱ','ㅈ','ㅊ','ㅋ','ㅅ','ㅜ','ㅟ','ㅠ']
 actions_m3 = ['ㄱ','ㅈ','ㅊ','ㅋ','ㅅ','ㅜ','ㅟ']
 # model_m3 = load_model('models/M/model_m3.h5')
-interpreter_m3 = tf.lite.Interpreter(model_path="models/JM/vector_norm/preprocessing_model3.tflite")
+interpreter_m3 = tf.lite.Interpreter(model_path="models/JM/vector_norm/preprocessing_model3_seq10.tflite")
 interpreter_m3.allocate_tensors()
 
 ## m4 방향에 따라 분류 (앞)
@@ -48,7 +48,7 @@ interpreter_m3.allocate_tensors()
 # actions_m4 = ['ㅎ','ㅓ','ㅔ','ㅕ','ㅖ']
 actions_m4 = ['ㅎ']
 # model_m4 = load_model('models/M/model_m4.h5')
-interpreter_m4 = tf.lite.Interpreter(model_path="models/JM/vector_norm/preprocessing_model4.tflite")
+interpreter_m4 = tf.lite.Interpreter(model_path="models/JM/vector_norm/preprocessing_model4_seq10.tflite")
 interpreter_m4.allocate_tensors()
 
 ## m5 방향에 따라 분류 (옆)
@@ -56,7 +56,7 @@ interpreter_m4.allocate_tensors()
 # actions_m5 = ['ㄴ','ㄷ','ㄹ','ㅌ','ㅡ','ㅢ']  
 actions_m5 = ['ㄴ','ㄷ','ㄹ','ㅡ','ㅢ']  
 # model_m5 = load_model('models/M/model_m5.h5')
-interpreter_m5 = tf.lite.Interpreter(model_path="models/JM/vector_norm/preprocessing_model5.tflite")
+interpreter_m5 = tf.lite.Interpreter(model_path="models/JM/vector_norm/preprocessing_model5_seq10.tflite")
 interpreter_m5.allocate_tensors()
 
 # Get input and output tensors.
@@ -68,7 +68,7 @@ output_details = interpreter_m1.get_output_details()
 
 def main():
     
-    seq_length = 30
+    seq_length = 10
     seq = []
     action_seq = []
     last_action = None
@@ -83,8 +83,8 @@ def main():
     jamo_li = deque()
     jamo_join_li = deque()
 
-    status_cnt_conf = 20
-    status_lst = deque(maxlen=status_cnt_conf//2)
+    status_cnt_conf = 10
+    status_lst = deque(['Stop']*status_cnt_conf, maxlen=status_cnt_conf)
 
     M = ['ㅏ', 'ㅐ', 'ㅑ', 'ㅒ', 'ㅣ', 'ㅗ', 'ㅚ', 'ㅛ', 'ㅜ', 'ㅟ', 'ㅠ', 'ㅓ', 'ㅔ', 'ㅕ', 'ㅖ', 'ㅡ', 'ㅢ', 'ㅘ', 'ㅙ', 'ㅝ', 'ㅞ']
     J = ["ㄱ", "ㅅ", "ㅈ", "ㅊ", "ㅋ", "ㄴ", "ㄷ", "ㄹ", "ㅌ", "ㅁ", "ㅂ", "ㅍ", "ㅇ", "ㅎ", "ㄲ", "ㅆ", "ㅉ", "ㄸ", "ㅃ"]
@@ -140,6 +140,10 @@ def main():
             jamo_li.append(this_action)
             this_action = ''
             print(cnt, jamo_li)
+            
+            status_lst.append(status)
+            print(cnt, status_lst)
+            
             if cnt >= status_cnt_conf:
                 jamo_dict = {}
                 for jamo in jamo_li:
@@ -148,49 +152,35 @@ def main():
                 print("jamo_dict", jamo_dict)
                 if jamo_dict and jamo_dict[0][1] >= int(status_cnt_conf*0.7):
                     tmp = jamo_dict[0][0]
+                    status_lst_slice = list(deque(itertools.islice(status_lst, int(status_cnt_conf*0.5), status_cnt_conf-1)))
+                    print("status_lst_slice", status_lst_slice)
                     if jamo_join_li:
                         print("tmp", tmp)
                         if tmp in J:
-                            # 쌍자음
-                            if tmp in JJ_dict.keys() and 'Move' in deque(itertools.islice(status_lst, int((status_cnt_conf//2)*0.3), (status_cnt_conf//2)-1)):
-                                if len(jamo_join_li) >= 2:
-                                    if jamo_join_li[-2] in M or jamo_join_li[-1] in M:
-                                        if jamo_join_li[-1] not in JJ_not_support:
-                                            jamo_join_li.append(JJ_dict[tmp])
-                                            print("1======================")
+                            if tmp in JJ_dict.keys():
+                                # 쌍자음
+                                if 'Move' in status_lst_slice: 
+                                        jamo_join_li.append(JJ_dict[tmp])
                                 else:
-                                    jamo_join_li.append(JJ_dict[tmp])
-                                    print("2======================")
-                            # 모음 - 자음
-                            elif jamo_join_li[-1] in M: 
-                                jamo_join_li.append(tmp)
-                                print("3======================")
-                            # 자음 - 자음
-                            elif len(jamo_join_li) >= 2:
-                                if jamo_join_li[-2] in M and jamo_join_li[-1] in J and jamo_join_li[-1] not in JJ_not_support:
                                     jamo_join_li.append(tmp)
-                                    print("4======================")
-                        elif tmp in M:
-                            # 자음 - 모음
-                            if jamo_join_li[-1] in J:
+                            else:
                                 jamo_join_li.append(tmp)
-                                print("5======================")
+                        elif tmp in M:
                             # 모음 - 모음 : 이중 모음
-                            elif jamo_join_li[-1] in MM_lst and tmp in MM_dict.keys():
+                            if jamo_join_li[-1] in MM_lst and tmp in MM_dict.keys():
                                 jamo_join_li.pop()
                                 jamo_join_li.append(MM_dict[tmp])
-                                print("6======================")
+                            else:
+                                jamo_join_li.append(tmp)
                     # 맨 처음 시작할 때 자음부터 시작
                     elif tmp in J:
-                        if tmp in JJ_dict.keys() and 'Move' in deque(itertools.islice(status_lst, int((status_cnt_conf//2)*0.3), (status_cnt_conf//2)-1)):
+                        if tmp in JJ_dict.keys() and 'Move' in status_lst_slice:
                             jamo_join_li.append(JJ_dict[tmp])
-                            print("7======================")
                         else:
                             jamo_join_li.append(tmp)
-                            print("8======================")
                 
                 jamo_li = []
-                cnt = -status_cnt_conf
+                cnt = -int(status_cnt_conf)
                 print("jamo_join_li", jamo_join_li)
                 print("cnt", cnt)
                 
@@ -214,14 +204,35 @@ def main():
                         lmlist_5_x, lmlist_5_y = int(lm.x*w), int(lm.y*h)
                     elif j == 17:
                         lmlist_17_x, lmlist_17_y = int(lm.x*w), int(lm.y*h)
+                        
+                    elif j == 12:
+                        lmlist_12_x, lmlist_12_y = int(lm.x*w), int(lm.y*h)
+                    elif j == 9:
+                        lmlist_9_x, lmlist_9_y = int(lm.x*w), int(lm.y*h)
+                    elif j == 16:
+                        lmlist_16_x, lmlist_16_y = int(lm.x*w), int(lm.y*h)
+                    elif j == 13:
+                        lmlist_13_x, lmlist_13_y = int(lm.x*w), int(lm.y*h)
 
                 radian = math.atan2(lmlist_17_y-lmlist_0_y,lmlist_17_x-lmlist_0_x)-math.atan2(lmlist_5_y-lmlist_0_y,lmlist_5_x-lmlist_0_x)
                 wrist_angle = 360 - int(math.degrees(radian))
+                
+                radian_2 = math.atan2(lmlist_9_y-lmlist_12_y,lmlist_9_x-lmlist_12_x)
+                wrist_angle_2 = int(math.degrees(radian_2))
+                radian_3 = math.atan2(lmlist_13_y-lmlist_16_y,lmlist_13_x-lmlist_16_x)
+                wrist_angle_3 = int(math.degrees(radian_3))
 
                 if wrist_angle < 0:
                     wrist_angle += 360
+                    
+                if wrist_angle_2 < 0:
+                    wrist_angle_2 += 360
+                if wrist_angle_3 < 0:
+                    wrist_angle_3 += 360
+                    
+                similar_text_res = wrist_angle_3 - wrist_angle_2
 
-                print("wrist_angle : ", wrist_angle)
+                # print("wrist_angle : ", wrist_angle)
                 # Compute angles between joints
                 v1 = joint[[0,1,2,3,0,5,6,7,0,9,10,11,0,13,14,15,0,17,18,19], :3] # Parent joint
                 v2 = joint[[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20], :3] # Child joint
@@ -319,7 +330,11 @@ def main():
 
                     action = actions_m5[i_pred]
                 
-                
+                    if action == 'ㄹ':
+                        if similar_text_res < 0:
+                            action = 'ㅌ'
+                        elif 0 < similar_text_res < 20:
+                            action = 'ㄹ'
 
                 action_seq.append(action)
 
@@ -361,14 +376,20 @@ def main():
                 # print(point_history_classifier_labels[most_common_fg_id[0][0]])
                 img = draw_point_history(img, point_history)
 
-                status_lst.append(status)
-                print(cnt, status_lst)
+                # status_lst.append(status)
+                # print(cnt, status_lst)
 
         img = cv2.flip(img, 1)
-
-        st = split_syllables(jamo_join_li)
-        s2 = join_jamos(st)
-
+        
+        # 자음 모음 결합
+        s2_lst = list(join_jamos(split_syllables(jamo_join_li)))
+        if len(s2_lst) >= 2:
+            for i in s2_lst[:-1]:
+                if i in J or i in M:
+                    s2_lst.remove(i)
+                    jamo_join_li = s2_lst
+        s2_lst_remove = join_jamos(split_syllables(s2_lst))
+        
         # Get status box
         cv2.rectangle(img, (0,0), (1000, 60), (245, 117, 16), -1)
         
@@ -380,7 +401,7 @@ def main():
         font = ImageFont.truetype(fontpath, 35)
         draw = ImageDraw.Draw(img_pil)
         draw.text((20, 15), f'{this_action}', font=font, fill=(b,g,r,a))
-        draw.text((200, 15), f'{s2}', font=font, fill=(b,g,r,a))
+        draw.text((200, 15), f'{s2_lst_remove}', font=font, fill=(b,g,r,a))
         img = np.array(img_pil)
 
         # Display Probability
