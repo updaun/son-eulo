@@ -95,6 +95,7 @@ def main():
         "ㄷ":"ㄸ",
         "ㅂ":"ㅃ"
         }
+    siot = ['ㅅ', 'ㅆ']
     JJ_not_support = ['ㅈ', 'ㅉ', 'ㄷ', 'ㄸ', 'ㅂ', 'ㅃ']
     MM_lst = ['ㅗ', 'ㅜ']
     MM_dict = {
@@ -154,28 +155,35 @@ def main():
                     tmp = jamo_dict[0][0]
                     status_lst_slice = list(deque(itertools.islice(status_lst, int(status_cnt_conf*0.5), status_cnt_conf-1)))
                     # print("status_lst_slice", status_lst_slice)
-                    if jamo_join_li:
-                        # print("tmp", tmp)
-                        if tmp in J:
-                            if tmp in JJ_dict.keys():
-                                # 쌍자음
+                    # print("tmp", tmp)
+                    if tmp in siot:
+                        if len(jamo_join_li) == 1:
+                            if 'Move' in status_lst_slice: 
+                                jamo_join_li.append('ㅆ')
+                            else:
+                                jamo_join_li.append('ㅅ')
+                        else:
+                            if jamo_join_li[-1] in J:
+                                jamo_join_li.append('ㅠ')
+                            else:
                                 if 'Move' in status_lst_slice: 
-                                        jamo_join_li.append(JJ_dict[tmp])
+                                    jamo_join_li.append('ㅆ')
                                 else:
-                                    jamo_join_li.append(tmp)
-                            else:
-                                jamo_join_li.append(tmp)
-                        elif tmp in M:
-                            # 모음 - 모음 : 이중 모음
-                            if jamo_join_li[-1] in MM_lst and tmp in MM_dict.keys():
-                                jamo_join_li.pop()
-                                jamo_join_li.append(MM_dict[tmp])
-                            else:
-                                jamo_join_li.append(tmp)
-                    # 맨 처음 시작할 때 자음부터 시작
+                                    jamo_join_li.append('ㅅ')
                     elif tmp in J:
-                        if tmp in JJ_dict.keys() and 'Move' in status_lst_slice:
-                            jamo_join_li.append(JJ_dict[tmp])
+                        if tmp in JJ_dict.keys():
+                            # 쌍자음
+                            if 'Move' in status_lst_slice: 
+                                    jamo_join_li.append(JJ_dict[tmp])
+                            else:
+                                jamo_join_li.append(tmp)
+                        else:
+                            jamo_join_li.append(tmp)
+                    elif tmp in M:
+                        # 모음 - 모음 : 이중 모음
+                        if jamo_join_li[-1] in MM_lst and tmp in MM_dict.keys():
+                            jamo_join_li.pop()
+                            jamo_join_li.append(MM_dict[tmp])
                         else:
                             jamo_join_li.append(tmp)
                 
@@ -386,18 +394,24 @@ def main():
 
                 # status_lst.append(status)
                 # print(cnt, status_lst)
+        else:
+            jamo_li = []
+            jamo_join_li.append(' ')
+            if jamo_join_li:
+                if len(jamo_join_li) >= 2 and jamo_join_li[-1] == ' ':
+                        jamo_join_li.remove(" ")
+            # print("jamo_li", jamo_li)
 
         img = cv2.flip(img, 1)
         
         # 자음 모음 결합
         s2_lst = list(join_jamos(split_syllables(jamo_join_li)))
-        if len(s2_lst) >= 2:
-            for i in s2_lst[:-1]:
-                if i in J or i in M:
-                    s2_lst.remove(i)
-                    jamo_join_li = s2_lst
-        s2_lst_remove = join_jamos(split_syllables(s2_lst))
-        
+        for i in s2_lst[:-1]:
+            if i in J or i in M:
+                s2_lst.remove(i)
+                jamo_join_li = s2_lst
+        s2_lst_remove = join_jamos(split_syllables(jamo_join_li))
+            
         # Get status box
         cv2.rectangle(img, (0,0), (1000, 60), (245, 117, 16), -1)
         
@@ -442,10 +456,13 @@ def calc_landmark_list(image, landmarks):
     # Keypoint
     for _, landmark in enumerate(landmarks.landmark):
         landmark_x = min(int(landmark.x * image_width), image_width - 1)
-        landmark_y = min(int(landmark.y * image_height), image_height - 1)
+        # landmark_y = min(int(landmark.y * image_height), image_height - 1)
         # landmark_z = landmark.z
 
-        landmark_point.append([landmark_x, landmark_y])
+        ## 좌우이동만 인식하기 위해 y값 제거 ##
+        ## 민감도 절감을 위한 x값 조정 ##
+        # landmark_point.append([landmark_x, landmark_y])
+        landmark_point.append([landmark_x // 1.5, 0])
 
     return landmark_point
 
