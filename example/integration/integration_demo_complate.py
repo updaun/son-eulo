@@ -195,35 +195,34 @@ def main(mode, mode_count, button_overlay):
             break
 
         img, result = detector.findHandswithResult(img, draw=True)
-
+        
         hand_lmlist, _ = detector.findPosition(img, draw=True)
-
+        
         if result.multi_hand_landmarks is not None:
             x1, y1 = hand_lmlist[8][1:3]
-            if 25 <= x1 <= 100:
-                if 125 < y1 < 200:
+            if mode == True:
+                if 25 < x1 < 100 and 125 < y1 < 200:
                     mode_count += 1
-                    if mode == 'korean':
-                        button_overlay = overlayList[2]
-                    else:
-                        button_overlay = overlayList[3]
-
+                    button_overlay = overlayList[2]
                     if mode_count > 15:
-                        if mode == 'korean':
-                            mode = 'number'
-                            button_overlay = overlayList[1]
-                        else:
-                            mode = 'korean'
-                            button_overlay = overlayList[0]
+                        mode = False
                         mode_count = 0
+                        button_overlay = overlayList[1]
+                else:
+                    button_overlay = overlayList[0]        
             else:
-                mode_count = 0
-                if mode == 'korean':
-                    button_overlay = overlayList[0]
+                if 25 < x1 < 100 and 125 < y1 < 200:
+                    mode_count +=1
+                    button_overlay = overlayList[3]
+                    if mode_count > 15:
+                        mode = True
+                        mode_count = 0
+                        button_overlay = overlayList[0]
                 else:
                     button_overlay = overlayList[1]
 
-            if mode == 'korean':
+            # korean mode
+            if mode == True:
                 wrist_angle, similar_text_res = wrist_angle_calculator(hand_lmlist)
 
                 d = vector_normalization(result)
@@ -354,7 +353,7 @@ def main(mode, mode_count, button_overlay):
                 cv2.putText(img, status
                 , (550,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
 
-            # mode == 'number'
+            # number mode
             else:
                 # x축을 기준으로 손가락 리스트
                 right_hand_fingersUp_list_a0 = detector.fingersUp(axis=False)
@@ -655,7 +654,7 @@ def wrist_angle_calculator(hand_lmlist):
     return wrist_angle, similar_text_res
 
 # User interface variables
-mode = 'korean'
+mode = False
 mode_count = 0
 button_overlay = overlayList[0]
 
