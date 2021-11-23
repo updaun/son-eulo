@@ -15,9 +15,12 @@ import os, sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(os.path.dirname(__file__)))))
 # from models import KeyPointClassifier
 from models import PointHistoryClassifier
+import modules.HandTrackingModule as htm
 
 from hangul_utils import split_syllable_char, split_syllables, join_jamos
 
+# Hand 객체 생성
+detector = htm.handDetector(max_num_hands=1)
 
 # ------------------- 모델 ------------------- #
 
@@ -109,16 +112,6 @@ def main():
     point_history = deque(maxlen=history_length)
     finger_gesture_history = deque(maxlen=history_length)
 
-    # MediaPipe hands model
-    mp_hands = mp.solutions.hands
-    mp_drawing = mp.solutions.drawing_utils
-    hands = mp_hands.Hands(
-        max_num_hands=1,
-        min_detection_confidence=0.5,
-        min_tracking_confidence=0.5)
-
-    # keypoint_classifier = KeyPointClassifier()
-
     point_history_classifier = PointHistoryClassifier()
 
     # Read labels ###########################################################
@@ -187,41 +180,22 @@ def main():
         if not ret:
             break
 
-        h, w, c = img.shape
+        img, result = detector.findHandswithResult(img, draw=True)
 
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        result = hands.process(img)
-        img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+        hand_lmlist, _ = detector.findPosition(img, draw=True)
 
         if result.multi_hand_landmarks is not None:
             for res in result.multi_hand_landmarks:
                 joint = np.zeros((21, 2))
                 for j, lm in enumerate(res.landmark):
                     joint[j] = [lm.x, lm.y]
-                    if j == 0:
-                        lmlist_0_x, lmlist_0_y = int(lm.x*w), int(lm.y*h)
-                    elif j == 4:
-                        lmlist_4_x, lmlist_4_y = int(lm.x*w), int(lm.y*h)
-                    elif j == 5:
-                        lmlist_5_x, lmlist_5_y = int(lm.x*w), int(lm.y*h)
-                    elif j == 17:
-                        lmlist_17_x, lmlist_17_y = int(lm.x*w), int(lm.y*h)
-                        
-                    elif j == 12:
-                        lmlist_12_x, lmlist_12_y = int(lm.x*w), int(lm.y*h)
-                    elif j == 9:
-                        lmlist_9_x, lmlist_9_y = int(lm.x*w), int(lm.y*h)
-                    elif j == 16:
-                        lmlist_16_x, lmlist_16_y = int(lm.x*w), int(lm.y*h)
-                    elif j == 13:
-                        lmlist_13_x, lmlist_13_y = int(lm.x*w), int(lm.y*h)
 
-                radian = math.atan2(lmlist_17_y-lmlist_0_y,lmlist_17_x-lmlist_0_x)-math.atan2(lmlist_5_y-lmlist_0_y,lmlist_5_x-lmlist_0_x)
+                radian = math.atan2(hand_lmlist[17][2]-hand_lmlist[0][2],hand_lmlist[17][1]-hand_lmlist[0][1])-math.atan2(hand_lmlist[5][2]-hand_lmlist[0][2],hand_lmlist[5][1]-hand_lmlist[0][1])
                 wrist_angle = 360 - int(math.degrees(radian))
                 
-                radian_2 = math.atan2(lmlist_9_y-lmlist_12_y,lmlist_9_x-lmlist_12_x)
+                radian_2 = math.atan2(hand_lmlist[9][2]-hand_lmlist[12][2],hand_lmlist[9][1]-hand_lmlist[12][1])
                 wrist_angle_2 = int(math.degrees(radian_2))
-                radian_3 = math.atan2(lmlist_13_y-lmlist_16_y,lmlist_13_x-lmlist_16_x)
+                radian_3 = math.atan2(hand_lmlist[13][2]-hand_lmlist[16][2],hand_lmlist[13][1]-hand_lmlist[16][1])
                 wrist_angle_3 = int(math.degrees(radian_3))
 
                 if wrist_angle < 0:
@@ -253,15 +227,13 @@ def main():
 
                 seq.append(d)
 
-                mp_drawing.draw_landmarks(img, res, mp_hands.HAND_CONNECTIONS)
-
                 if len(seq) < seq_length:
                     continue
 
                 input_data = np.expand_dims(np.array(seq[-seq_length:], dtype=np.float32), axis=0)
                 input_data = np.array(input_data, dtype=np.float32)
 
-                if lmlist_5_x > lmlist_17_x and lmlist_5_y < lmlist_0_y and lmlist_17_y < lmlist_0_y:
+                if hand_lmlist[5][1] > hand_lmlist[17][1] and hand_lmlist[5][2] < hand_lmlist[0][2] and hand_lmlist[17][2] < hand_lmlist[0][2]:
                     # print("model m1")
                     select_model = "m1"
                     interpreter_m1.set_tensor(input_details[0]['index'], input_data)
@@ -274,7 +246,7 @@ def main():
 
                     action = actions_m1[i_pred]
 
-                elif lmlist_5_x < lmlist_17_x and lmlist_5_y < lmlist_0_y and lmlist_17_y < lmlist_0_y:
+                elif hand_lmlist[5][1] < hand_lmlist[17][1] and hand_lmlist[5][2] < hand_lmlist[0][2] and hand_lmlist[17][2] < hand_lmlist[0][2]:
                     # print("model m2")
                     select_model = "m2"
 
@@ -289,7 +261,7 @@ def main():
 
                     action = actions_m2[i_pred]
 
-                elif lmlist_5_x > lmlist_17_x and lmlist_0_y < lmlist_5_y and lmlist_0_y < lmlist_17_y:
+                elif hand_lmlist[5][1] > hand_lmlist[17][1] and hand_lmlist[0][2] < hand_lmlist[5][2] and hand_lmlist[0][2] < hand_lmlist[17][2]:
                     # print("model m3")
                     select_model = "m3"
                     interpreter_m3.set_tensor(input_details[0]['index'], input_data)
@@ -303,13 +275,13 @@ def main():
 
                     action = actions_m3[i_pred]
                     if action == 'ㄱ':
-                        if lmlist_4_x < lmlist_5_x:
+                        if hand_lmlist[4][1] < hand_lmlist[5][1]:
                             action = 'ㅜ'
                     elif action == 'ㅜ':
-                        if lmlist_4_x > lmlist_5_x:
+                        if hand_lmlist[4][1] > hand_lmlist[5][1]:
                             action = 'ㄱ'
 
-                elif lmlist_5_x > lmlist_0_x and lmlist_5_y < lmlist_17_y and (wrist_angle <= 300 or wrist_angle >= 350):
+                elif hand_lmlist[5][1] > hand_lmlist[0][1] and hand_lmlist[5][2] < hand_lmlist[17][2] and (wrist_angle <= 300 or wrist_angle >= 350):
                     # print("model m4")
                     # select_model = "m4"
                     # interpreter_m4.set_tensor(input_details[0]['index'], input_data)
@@ -324,7 +296,7 @@ def main():
                     # action = actions_m4[i_pred]
                     pass
                 
-                elif lmlist_5_x > lmlist_0_x and lmlist_5_y < lmlist_17_y:
+                elif hand_lmlist[5][1] > hand_lmlist[0][1] and hand_lmlist[5][2] < hand_lmlist[17][2]:
                     # print("model m5")
                     select_model = "m5"
                     interpreter_m5.set_tensor(input_details[0]['index'], input_data)
@@ -355,7 +327,7 @@ def main():
 
                     if last_action != this_action:
                         last_action = this_action
-              
+
             for hand_landmarks, handedness in zip(result.multi_hand_landmarks, result.multi_handedness):
                 landmark_list = calc_landmark_list(img, hand_landmarks)
 
