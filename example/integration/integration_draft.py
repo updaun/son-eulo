@@ -15,9 +15,12 @@ import os, sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(os.path.dirname(__file__)))))
 # from models import KeyPointClassifier
 from models import PointHistoryClassifier
+import modules.HandTrackingModule as htm
 
 from hangul_utils import split_syllable_char, split_syllables, join_jamos
 
+# Hand 객체 생성
+detector = htm.handDetector(max_num_hands=1)
 
 # ------------------- 모델 ------------------- #
 
@@ -95,7 +98,6 @@ def main():
         "ㄷ":"ㄸ",
         "ㅂ":"ㅃ"
         }
-    siot = ['ㅅ', 'ㅆ']
     JJ_not_support = ['ㅈ', 'ㅉ', 'ㄷ', 'ㄸ', 'ㅂ', 'ㅃ']
     MM_lst = ['ㅗ', 'ㅜ']
     MM_dict = {
@@ -109,16 +111,6 @@ def main():
     history_length = 16
     point_history = deque(maxlen=history_length)
     finger_gesture_history = deque(maxlen=history_length)
-
-    # MediaPipe hands model
-    mp_hands = mp.solutions.hands
-    mp_drawing = mp.solutions.drawing_utils
-    hands = mp_hands.Hands(
-        max_num_hands=1,
-        min_detection_confidence=0.5,
-        min_tracking_confidence=0.5)
-
-    # keypoint_classifier = KeyPointClassifier()
 
     point_history_classifier = PointHistoryClassifier()
 
@@ -155,35 +147,28 @@ def main():
                     tmp = jamo_dict[0][0]
                     status_lst_slice = list(deque(itertools.islice(status_lst, int(status_cnt_conf*0.5), status_cnt_conf-1)))
                     # print("status_lst_slice", status_lst_slice)
-                    # print("tmp", tmp)
-                    if tmp in siot:
-                        if len(jamo_join_li) == 1:
-                            if 'Move' in status_lst_slice: 
-                                jamo_join_li.append('ㅆ')
-                            else:
-                                jamo_join_li.append('ㅅ')
-                        else:
-                            if jamo_join_li[-1] in J:
-                                jamo_join_li.append('ㅠ')
-                            else:
+                    if jamo_join_li:
+                        # print("tmp", tmp)
+                        if tmp in J:
+                            if tmp in JJ_dict.keys():
+                                # 쌍자음
                                 if 'Move' in status_lst_slice: 
-                                    jamo_join_li.append('ㅆ')
+                                        jamo_join_li.append(JJ_dict[tmp])
                                 else:
-                                    jamo_join_li.append('ㅅ')
-                    elif tmp in J:
-                        if tmp in JJ_dict.keys():
-                            # 쌍자음
-                            if 'Move' in status_lst_slice: 
-                                    jamo_join_li.append(JJ_dict[tmp])
+                                    jamo_join_li.append(tmp)
                             else:
                                 jamo_join_li.append(tmp)
-                        else:
-                            jamo_join_li.append(tmp)
-                    elif tmp in M:
-                        # 모음 - 모음 : 이중 모음
-                        if jamo_join_li[-1] in MM_lst and tmp in MM_dict.keys():
-                            jamo_join_li.pop()
-                            jamo_join_li.append(MM_dict[tmp])
+                        elif tmp in M:
+                            # 모음 - 모음 : 이중 모음
+                            if jamo_join_li[-1] in MM_lst and tmp in MM_dict.keys():
+                                jamo_join_li.pop()
+                                jamo_join_li.append(MM_dict[tmp])
+                            else:
+                                jamo_join_li.append(tmp)
+                    # 맨 처음 시작할 때 자음부터 시작
+                    elif tmp in J:
+                        if tmp in JJ_dict.keys() and 'Move' in status_lst_slice:
+                            jamo_join_li.append(JJ_dict[tmp])
                         else:
                             jamo_join_li.append(tmp)
                 
@@ -195,41 +180,22 @@ def main():
         if not ret:
             break
 
-        h, w, c = img.shape
+        img, result = detector.findHandswithResult(img, draw=True)
 
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        result = hands.process(img)
-        img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+        hand_lmlist, _ = detector.findPosition(img, draw=True)
 
         if result.multi_hand_landmarks is not None:
             for res in result.multi_hand_landmarks:
                 joint = np.zeros((21, 2))
                 for j, lm in enumerate(res.landmark):
                     joint[j] = [lm.x, lm.y]
-                    if j == 0:
-                        lmlist_0_x, lmlist_0_y = int(lm.x*w), int(lm.y*h)
-                    elif j == 4:
-                        lmlist_4_x, lmlist_4_y = int(lm.x*w), int(lm.y*h)
-                    elif j == 5:
-                        lmlist_5_x, lmlist_5_y = int(lm.x*w), int(lm.y*h)
-                    elif j == 17:
-                        lmlist_17_x, lmlist_17_y = int(lm.x*w), int(lm.y*h)
-                        
-                    elif j == 12:
-                        lmlist_12_x, lmlist_12_y = int(lm.x*w), int(lm.y*h)
-                    elif j == 9:
-                        lmlist_9_x, lmlist_9_y = int(lm.x*w), int(lm.y*h)
-                    elif j == 16:
-                        lmlist_16_x, lmlist_16_y = int(lm.x*w), int(lm.y*h)
-                    elif j == 13:
-                        lmlist_13_x, lmlist_13_y = int(lm.x*w), int(lm.y*h)
 
-                radian = math.atan2(lmlist_17_y-lmlist_0_y,lmlist_17_x-lmlist_0_x)-math.atan2(lmlist_5_y-lmlist_0_y,lmlist_5_x-lmlist_0_x)
+                radian = math.atan2(hand_lmlist[17][2]-hand_lmlist[0][2],hand_lmlist[17][1]-hand_lmlist[0][1])-math.atan2(hand_lmlist[5][2]-hand_lmlist[0][2],hand_lmlist[5][1]-hand_lmlist[0][1])
                 wrist_angle = 360 - int(math.degrees(radian))
                 
-                radian_2 = math.atan2(lmlist_9_y-lmlist_12_y,lmlist_9_x-lmlist_12_x)
+                radian_2 = math.atan2(hand_lmlist[9][2]-hand_lmlist[12][2],hand_lmlist[9][1]-hand_lmlist[12][1])
                 wrist_angle_2 = int(math.degrees(radian_2))
-                radian_3 = math.atan2(lmlist_13_y-lmlist_16_y,lmlist_13_x-lmlist_16_x)
+                radian_3 = math.atan2(hand_lmlist[13][2]-hand_lmlist[16][2],hand_lmlist[13][1]-hand_lmlist[16][1])
                 wrist_angle_3 = int(math.degrees(radian_3))
 
                 if wrist_angle < 0:
@@ -261,15 +227,13 @@ def main():
 
                 seq.append(d)
 
-                mp_drawing.draw_landmarks(img, res, mp_hands.HAND_CONNECTIONS)
-
                 if len(seq) < seq_length:
                     continue
 
                 input_data = np.expand_dims(np.array(seq[-seq_length:], dtype=np.float32), axis=0)
                 input_data = np.array(input_data, dtype=np.float32)
 
-                if lmlist_5_x > lmlist_17_x and lmlist_5_y < lmlist_0_y and lmlist_17_y < lmlist_0_y:
+                if hand_lmlist[5][1] > hand_lmlist[17][1] and hand_lmlist[5][2] < hand_lmlist[0][2] and hand_lmlist[17][2] < hand_lmlist[0][2]:
                     # print("model m1")
                     select_model = "m1"
                     interpreter_m1.set_tensor(input_details[0]['index'], input_data)
@@ -282,7 +246,7 @@ def main():
 
                     action = actions_m1[i_pred]
 
-                elif lmlist_5_x < lmlist_17_x and lmlist_5_y < lmlist_0_y and lmlist_17_y < lmlist_0_y:
+                elif hand_lmlist[5][1] < hand_lmlist[17][1] and hand_lmlist[5][2] < hand_lmlist[0][2] and hand_lmlist[17][2] < hand_lmlist[0][2]:
                     # print("model m2")
                     select_model = "m2"
 
@@ -297,7 +261,7 @@ def main():
 
                     action = actions_m2[i_pred]
 
-                elif lmlist_5_x > lmlist_17_x and lmlist_0_y < lmlist_5_y and lmlist_0_y < lmlist_17_y:
+                elif hand_lmlist[5][1] > hand_lmlist[17][1] and hand_lmlist[0][2] < hand_lmlist[5][2] and hand_lmlist[0][2] < hand_lmlist[17][2]:
                     # print("model m3")
                     select_model = "m3"
                     interpreter_m3.set_tensor(input_details[0]['index'], input_data)
@@ -311,13 +275,13 @@ def main():
 
                     action = actions_m3[i_pred]
                     if action == 'ㄱ':
-                        if lmlist_4_x < lmlist_5_x:
+                        if hand_lmlist[4][1] < hand_lmlist[5][1]:
                             action = 'ㅜ'
                     elif action == 'ㅜ':
-                        if lmlist_4_x > lmlist_5_x:
+                        if hand_lmlist[4][1] > hand_lmlist[5][1]:
                             action = 'ㄱ'
 
-                elif lmlist_5_x > lmlist_0_x and lmlist_5_y < lmlist_17_y and (wrist_angle <= 300 or wrist_angle >= 350):
+                elif hand_lmlist[5][1] > hand_lmlist[0][1] and hand_lmlist[5][2] < hand_lmlist[17][2] and (wrist_angle <= 300 or wrist_angle >= 350):
                     # print("model m4")
                     # select_model = "m4"
                     # interpreter_m4.set_tensor(input_details[0]['index'], input_data)
@@ -332,7 +296,7 @@ def main():
                     # action = actions_m4[i_pred]
                     pass
                 
-                elif lmlist_5_x > lmlist_0_x and lmlist_5_y < lmlist_17_y:
+                elif hand_lmlist[5][1] > hand_lmlist[0][1] and hand_lmlist[5][2] < hand_lmlist[17][2]:
                     # print("model m5")
                     select_model = "m5"
                     interpreter_m5.set_tensor(input_details[0]['index'], input_data)
@@ -363,7 +327,7 @@ def main():
 
                     if last_action != this_action:
                         last_action = this_action
-              
+
             for hand_landmarks, handedness in zip(result.multi_hand_landmarks, result.multi_handedness):
                 landmark_list = calc_landmark_list(img, hand_landmarks)
 
@@ -394,24 +358,18 @@ def main():
 
                 # status_lst.append(status)
                 # print(cnt, status_lst)
-        else:
-            jamo_li = []
-            jamo_join_li.append(' ')
-            if jamo_join_li:
-                if len(jamo_join_li) >= 2 and jamo_join_li[-1] == ' ':
-                        jamo_join_li.remove(" ")
-            # print("jamo_li", jamo_li)
 
         img = cv2.flip(img, 1)
         
         # 자음 모음 결합
         s2_lst = list(join_jamos(split_syllables(jamo_join_li)))
-        for i in s2_lst[:-1]:
-            if i in J or i in M:
-                s2_lst.remove(i)
-                jamo_join_li = s2_lst
-        s2_lst_remove = join_jamos(split_syllables(jamo_join_li))
-            
+        if len(s2_lst) >= 2:
+            for i in s2_lst[:-1]:
+                if i in J or i in M:
+                    s2_lst.remove(i)
+                    jamo_join_li = s2_lst
+        s2_lst_remove = join_jamos(split_syllables(s2_lst))
+        
         # Get status box
         cv2.rectangle(img, (0,0), (1000, 60), (245, 117, 16), -1)
         
@@ -456,13 +414,10 @@ def calc_landmark_list(image, landmarks):
     # Keypoint
     for _, landmark in enumerate(landmarks.landmark):
         landmark_x = min(int(landmark.x * image_width), image_width - 1)
-        # landmark_y = min(int(landmark.y * image_height), image_height - 1)
+        landmark_y = min(int(landmark.y * image_height), image_height - 1)
         # landmark_z = landmark.z
 
-        ## 좌우이동만 인식하기 위해 y값 제거 ##
-        ## 민감도 절감을 위한 x값 조정 ##
-        # landmark_point.append([landmark_x, landmark_y])
-        landmark_point.append([landmark_x // 1.5, 0])
+        landmark_point.append([landmark_x, landmark_y])
 
     return landmark_point
 
