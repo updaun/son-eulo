@@ -71,7 +71,7 @@ for imPath in myList:
 
 
 def main(mode, mode_count, button_overlay):
-    # action Variable
+    # Number Variable
     cnt10 = 0
     text_cnt = 0
     dcnt = 0
@@ -139,7 +139,7 @@ def main(mode, mode_count, button_overlay):
     cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
 
     while cap.isOpened():
-        action = 0
+        number = 0
         ret, img = cap.read()
         
         if this_action not in ['', ' ']:
@@ -194,9 +194,9 @@ def main(mode, mode_count, button_overlay):
         if not ret:
             break
 
-        img, result = detector.findHandswithResult(img, draw=False)
+        img, result = detector.findHandswithResult(img, draw=True)
         
-        hand_lmlist, _ = detector.findPosition(img, draw=False)
+        hand_lmlist, _ = detector.findPosition(img, draw=True)
         
         if result.multi_hand_landmarks is not None:
             x1, y1 = hand_lmlist[8][1:3]
@@ -223,9 +223,42 @@ def main(mode, mode_count, button_overlay):
 
             # korean mode
             if mode == True:
-                wrist_angle, similar_text_res = wrist_angle_calculator(hand_lmlist)
+                radian = math.atan2(hand_lmlist[17][2]-hand_lmlist[0][2],hand_lmlist[17][1]-hand_lmlist[0][1])-math.atan2(hand_lmlist[5][2]-hand_lmlist[0][2],hand_lmlist[5][1]-hand_lmlist[0][1])
+                wrist_angle = 360 - int(math.degrees(radian))
+                radian_2 = math.atan2(hand_lmlist[9][2]-hand_lmlist[12][2],hand_lmlist[9][1]-hand_lmlist[12][1])
+                wrist_angle_2 = int(math.degrees(radian_2))
+                radian_3 = math.atan2(hand_lmlist[13][2]-hand_lmlist[16][2],hand_lmlist[13][1]-hand_lmlist[16][1])
+                wrist_angle_3 = int(math.degrees(radian_3))
 
-                d = vector_normalization(result)
+                if wrist_angle < 0:
+                    wrist_angle += 360
+                    
+                if wrist_angle_2 < 0:
+                    wrist_angle_2 += 360
+                if wrist_angle_3 < 0:
+                    wrist_angle_3 += 360
+                    
+                similar_text_res = wrist_angle_3 - wrist_angle_2
+                for res in result.multi_hand_landmarks:
+                    joint = np.zeros((21, 2))
+                    for j, lm in enumerate(res.landmark):
+                        joint[j] = [lm.x, lm.y]
+                    
+                    # Compute angles between joints
+                    v1 = joint[[0,1,2,3,0,5,6,7,0,9,10,11,0,13,14,15,0,17,18,19], :3] # Parent joint
+                    v2 = joint[[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20], :3] # Child joint
+                    v = v2 - v1 # [20, 3]
+                    # Normalize v
+                    v = v / np.linalg.norm(v, axis=1)[:, np.newaxis]
+
+                    # Get angle using arcos of dot product
+                    angle = np.arccos(np.einsum('nt,nt->n',
+                        v[[0,1,2,4,5,6,8,9,10,12,13,14,16,17,18],:], 
+                        v[[1,2,3,5,6,7,9,10,11,13,14,15,17,18,19],:])) # [15,]
+
+                    angle = np.degrees(angle) # Convert radian to degree
+
+                    d = np.concatenate([v.flatten(), angle])
 
                 seq.append(d)
 
@@ -236,19 +269,31 @@ def main(mode, mode_count, button_overlay):
                 input_data = np.array(input_data, dtype=np.float32)
 
                 if hand_lmlist[5][1] > hand_lmlist[17][1] and hand_lmlist[5][2] < hand_lmlist[0][2] and hand_lmlist[17][2] < hand_lmlist[0][2]:
+                    # pass
                     # print("model m1")
                     select_model = "m1"
-                    i_pred, conf = model_predict(input_data, interpreter_m1)
+                    # i_pred, conf = model_predict(input_data, interpreter_m1)
+                    interpreter_m1.set_tensor(input_details[0]['index'], input_data)
+                    interpreter_m1.invoke()
+                    y_pred = interpreter_m1.get_tensor(output_details[0]['index'])
+                    i_pred = int(np.argmax(y_pred[0]))
+                    conf = y_pred[0][i_pred]
                     if conf < confidence:
                         continue
 
                     action = actions_m1[i_pred]
 
                 elif hand_lmlist[5][1] < hand_lmlist[17][1] and hand_lmlist[5][2] < hand_lmlist[0][2] and hand_lmlist[17][2] < hand_lmlist[0][2]:
+                    # pass
                     # print("model m2")
                     select_model = "m2"
-                    i_pred, conf = model_predict(input_data, interpreter_m2)
-                    
+                    # i_pred, conf = model_predict(input_data, interpreter_m2)
+                    interpreter_m2.set_tensor(input_details[0]['index'], input_data)
+                    interpreter_m2.invoke()
+                    y_pred = interpreter_m2.get_tensor(output_details[0]['index'])
+                    i_pred = int(np.argmax(y_pred[0]))
+                    conf = y_pred[0][i_pred]
+
                     if conf < confidence:
                         continue
 
@@ -256,8 +301,15 @@ def main(mode, mode_count, button_overlay):
 
                 elif hand_lmlist[5][1] > hand_lmlist[17][1] and hand_lmlist[0][2] < hand_lmlist[5][2] and hand_lmlist[0][2] < hand_lmlist[17][2]:
                     # print("model m3")
+                    # pass
                     select_model = "m3"
-                    i_pred, conf = model_predict(input_data, interpreter_m3)
+                    # i_pred, conf = model_predict(input_data, interpreter_m3)
+                    interpreter_m3.set_tensor(input_details[0]['index'], input_data)
+                    interpreter_m3.invoke()
+                    y_pred = interpreter_m3.get_tensor(output_details[0]['index'])
+                    i_pred = int(np.argmax(y_pred[0]))
+                    conf = y_pred[0][i_pred]
+                    
 
                     if conf < confidence:
                         continue
@@ -283,9 +335,15 @@ def main(mode, mode_count, button_overlay):
                 
                 elif hand_lmlist[5][1] > hand_lmlist[0][1] and hand_lmlist[5][2] < hand_lmlist[17][2]:
                     # print("model m5")
+                    # pass
                     select_model = "m5"
 
-                    i_pred, conf = model_predict(input_data, interpreter_m5)
+                    # i_pred, conf = model_predict(input_data, interpreter_m5)
+                    interpreter_m5.set_tensor(input_details[0]['index'], input_data)
+                    interpreter_m5.invoke()
+                    y_pred = interpreter_m5.get_tensor(output_details[0]['index'])
+                    i_pred = int(np.argmax(y_pred[0]))
+                    conf = y_pred[0][i_pred]
 
                     if conf < confidence:
                         continue
@@ -298,8 +356,84 @@ def main(mode, mode_count, button_overlay):
                         elif 0 < similar_text_res < 20:
                             action = 'ㄹ'
 
+                action_seq.append(action)
+
+                if len(action_seq) < 3:
+                    continue
+
+                this_action = ' '
+                if action_seq[-1] == action_seq[-2] == action_seq[-3]:
+                    this_action = action
+
+                    if last_action != this_action:
+                        last_action = this_action
+
+                # wrist moving check
+                for hand_landmarks, handedness in zip(result.multi_hand_landmarks, result.multi_handedness):
+                    landmark_list = calc_landmark_list(img, hand_landmarks)
+
+                    pre_processed_landmark_list = pre_process_landmark(
+                        landmark_list)
+                    pre_processed_point_history_list = pre_process_point_history(
+                        img, point_history)
+
+                    point_history.append(landmark_list[0])
+
+                    finger_gesture_id = 0
+                    point_history_len = len(pre_processed_point_history_list)
+                    if point_history_len == (history_length * 2):
+                        finger_gesture_id = point_history_classifier(
+                            pre_processed_point_history_list)
+
+                    # Calculates the gesture IDs in the latest detection
+                    finger_gesture_history.append(finger_gesture_id)
+                    most_common_fg_id = Counter(
+                        finger_gesture_history).most_common()
+
+                    status = point_history_classifier_labels[most_common_fg_id[0][0]]
+                    img = draw_point_history(img, point_history)
+
+                img = cv2.flip(img, 1)
+                # 자음 모음 결합
+                s2_lst = list(join_jamos(split_syllables(jamo_join_li)))
+                if len(s2_lst) >= 2:
+                    for i in s2_lst[:-1]:
+                        if i in J or i in M:
+                            s2_lst.remove(i)
+                            jamo_join_li = s2_lst
+                s2_lst_remove = join_jamos(split_syllables(s2_lst))
                 
-            # action mode
+                # Get status box
+                cv2.rectangle(img, (0,0), (1000, 60), (245, 117, 16), -1)
+                
+                # 한글 적용
+                b,g,r,a = 255,255,255,0
+                # fontpath = "fonts/gulim.ttc" # 30, (30, 25)
+                fontpath = "fonts/KoPubWorld Dotum Bold.ttf"
+                img_pil = Image.fromarray(img)
+                font = ImageFont.truetype(fontpath, 35)
+                draw = ImageDraw.Draw(img_pil)
+                draw.text((20, 15), f'{this_action}', font=font, fill=(b,g,r,a))
+                draw.text((200, 15), f'{s2_lst_remove}', font=font, fill=(b,g,r,a))
+                img = np.array(img_pil)
+
+                # Display Probability
+                cv2.putText(img, 'INPUT'
+                            , (15,18), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
+                cv2.putText(img, 'MODEL'
+                            , (100,18), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
+                cv2.putText(img, f'{select_model}'
+                            , (100,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+                cv2.putText(img, 'OUTPUT'
+                            , (200,18), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
+
+                # Display Probability
+                cv2.putText(img, 'STATUS'
+                            , (550,18), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
+                cv2.putText(img, status
+                , (550,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+
+            # number mode
             else:
                 # x축을 기준으로 손가락 리스트
                 right_hand_fingersUp_list_a0 = detector.fingersUp(axis=False)
@@ -321,59 +455,59 @@ def main(mode, mode_count, button_overlay):
                 # 손바닥이 보임, 수향이 위쪽
                 if hand_lmlist[5][1] > hand_lmlist[17][1] and hand_lmlist[4][2] > hand_lmlist[8][2]:
                     if right_hand_fingersUp_list_a0 == [0, 1, 0, 0, 0] and hand_lmlist[8][2] < hand_lmlist[7][2]:
-                        action = 1
+                        number = 1
                     elif right_hand_fingersUp_list_a0 == [0, 1, 1, 0, 0]:
-                        action = 2
+                        number = 2
                     elif right_hand_fingersUp_list_a0 == [0, 1, 1, 1, 0]:
-                        action = 3
+                        number = 3
                     elif right_hand_fingersUp_list_a0 == [0, 1, 1, 1, 1]:
-                        action = 4
+                        number = 4
                     elif right_hand_fingersUp_list_a0 == [1, 0, 1, 1, 1] and thumb_index_length < 30:
-                        action = 10  # 동그라미 10
+                        number = 10  # 동그라미 10
 
                 # 손바닥이 보임
                 if hand_lmlist[5][1] > hand_lmlist[17][1]:
                     if right_hand_fingersUp_list_a0 == [1, 0, 0, 0, 0]:
-                        action = 5
+                        number = 5
                     # 손가락을 살짝 구부려 10과 20 구분
                     if right_hand_fingersUp_list_a0[0] == 0 and right_hand_fingersUp_list_a0[2:] == [0, 0, 0] and total_index_angle < 140:
-                        action = 10
+                        number = 10
                         cnt10 += 1
                     elif right_hand_fingersUp_list_a0[0] == 0 and right_hand_fingersUp_list_a0[3:] == [0, 0] and total_index_angle < 145 and total_middle_angle < 165:
-                        action = 20
+                        number = 20
 
                 # 손등이 보임, 수향이 몸 안쪽으로 향함, 엄지가 들려 있음
                 if hand_lmlist[5][2] < hand_lmlist[17][2] and hand_lmlist[4][2] < hand_lmlist[8][2]:
                     if right_hand_fingersUp_list_a1 == [1, 1, 0, 0, 0]:
-                        action = 6
+                        number = 6
                     elif right_hand_fingersUp_list_a1 == [1, 1, 1, 0, 0]:
-                        action = 7
+                        number = 7
                     elif right_hand_fingersUp_list_a1 == [1, 1, 1, 1, 0]:
-                        action = 8
+                        number = 8
                     elif right_hand_fingersUp_list_a1 == [1, 1, 1, 1, 1]:
-                        action = 9
+                        number = 9
 
                 # 손등이 보이고, 수향이 몸 안쪽으로 향함
                 if hand_lmlist[5][2] < hand_lmlist[17][2] and hand_lmlist[1][2] < hand_lmlist[13][2]:
                     # 엄지가 숨어짐
                     if hand_lmlist[4][2] + 30 > hand_lmlist[8][2]:
                         if right_hand_fingersUp_list_a1[2:] == [1, 0, 0] and hand_lmlist[8][1] <= hand_lmlist[6][1] + 20:
-                            action = 12
+                            number = 12
                         elif right_hand_fingersUp_list_a1[2:] == [1, 1, 0] and hand_lmlist[8][1] <= hand_lmlist[6][1] + 20:
-                            action = 13
+                            number = 13
                         elif right_hand_fingersUp_list_a1[2:] == [1, 1, 1] and hand_lmlist[8][1] <= hand_lmlist[6][1] + 20:
-                            action = 14
+                            number = 14
                     # 엄지가 보임
                     else:
                         if right_hand_fingersUp_list_a1[2:] == [1, 0, 0] and hand_lmlist[8][1] <= hand_lmlist[6][1] + 20:
-                            action = 17
+                            number = 17
                         elif right_hand_fingersUp_list_a1[2:] == [1, 1, 0] and hand_lmlist[8][1] <= hand_lmlist[6][1] + 20:
-                            action = 18
+                            number = 18
                         elif right_hand_fingersUp_list_a1[2:] == [1, 1, 1] and hand_lmlist[8][1] <= hand_lmlist[6][1] + 20:
-                            action = 19    
+                            number = 19    
 
                 if cnt10 > (max_detec - min_detec):
-                    action = 10
+                    number = 10
                     flag = True
                     # print("clear")
                     # dcnt = 0
@@ -383,39 +517,51 @@ def main(mode, mode_count, button_overlay):
                     if hand_lmlist[5][1] > hand_lmlist[17][1] and hand_lmlist[4][2] > hand_lmlist[8][2]:
                         if right_hand_fingersUp_list_a0 == [0, 1, 0, 0, 0] and hand_lmlist[8][2] < hand_lmlist[7][2]:
                             dcnt += 1
-                            action = 0
+                            number = 0
                             if max_detec > dcnt > min_detec:
-                                action = 11
+                                number = 11
                             elif dcnt > max_detec+10:
-                                action = 0
+                                number = 0
                                 cnt10 = 0
                                 dcnt = 0
                                 # print("clear")
                     elif hand_lmlist[5][1] > hand_lmlist[17][1]:
                         if right_hand_fingersUp_list_a0 == [1, 0, 0, 0, 0]:
                             dcnt += 1
-                            action = 0
+                            number = 0
                             if max_detec > dcnt > min_detec:
-                                action = 15
+                                number = 15
                             elif dcnt > max_detec+10:
-                                action = 0
+                                number = 0
                                 cnt10 = 0
                                 dcnt = 0
                     elif hand_lmlist[5][2] < hand_lmlist[17][2] and hand_lmlist[4][2] < hand_lmlist[8][2]:
                         if right_hand_fingersUp_list_a1 == [1, 1, 0, 0, 0]:
                             dcnt += 1
-                            action = 0
+                            number = 0
                             if max_detec > dcnt > min_detec:
-                                action = 16
+                                number = 16
                             elif dcnt > max_detec+10:
-                                action = 0
+                                number = 0
                                 cnt10 = 0
                                 dcnt = 0
                                 
-                    if action in num_lst:
+                    if number in num_lst:
                         flag = True
 
-                if action != 0:
+                img = cv2.flip(img, 1)
+
+                # Get status box
+                cv2.rectangle(img, (0,0), (100, 60), (245, 117, 16), -1)
+
+                # Display Probability 
+                cv2.putText(img, 'NUMBER'
+                            , (2,18), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
+
+                if number != 0:
+                    cv2.putText(img, str(number)
+                                , (25,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+
                     if flag:
                         text_cnt += 1
                         if text_cnt % max_detec == 0:
@@ -423,68 +569,8 @@ def main(mode, mode_count, button_overlay):
                             text_cnt = 0
                             dcnt = 0
                             flag = False
-
-                action = str(action)
-
-            action_seq.append(action)
-
-            if len(action_seq) < 3:
-                continue
-
-            this_action = ' '
-            if action_seq[-1] == action_seq[-2] == action_seq[-3]:
-                this_action = action
-
-                if last_action != this_action:
-                    last_action = this_action
-
-            # wrist moving check
-            status, img = check_moving(result, img, point_history, point_history_classifier, finger_gesture_history, point_history_classifier_labels, draw=False)
-            
-            img = cv2.flip(img, 1)
-            # 자음 모음 결합
-            s2_lst = list(join_jamos(split_syllables(jamo_join_li)))
-            if len(s2_lst) >= 2:
-                for i in s2_lst[:-1]:
-                    if i in J or i in M:
-                        s2_lst.remove(i)
-                        jamo_join_li = s2_lst
-            s2_lst_remove = join_jamos(split_syllables(s2_lst))
-            
-            # Get status box
-            cv2.rectangle(img, (0,0), (1000, 60), (245, 117, 16), -1)
-            
-            # 한글 적용
-            b,g,r,a = 255,255,255,0
-            # fontpath = "fonts/gulim.ttc" # 30, (30, 25)
-            fontpath = "fonts/KoPubWorld Dotum Bold.ttf"
-            img_pil = Image.fromarray(img)
-            font = ImageFont.truetype(fontpath, 35)
-            draw = ImageDraw.Draw(img_pil)
-            draw.text((20, 15), f'{this_action}', font=font, fill=(b,g,r,a))
-            draw.text((200, 15), f'{s2_lst_remove}', font=font, fill=(b,g,r,a))
-            img = np.array(img_pil)
-
-            # Display Probability
-            cv2.putText(img, 'INPUT'
-                        , (15,18), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
-            cv2.putText(img, 'MODEL'
-                        , (100,18), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
-            cv2.putText(img, f'{select_model}'
-                        , (100,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
-            cv2.putText(img, 'OUTPUT'
-                        , (200,18), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
-
-            # Display Probability
-            cv2.putText(img, 'STATUS'
-                        , (550,18), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
-            cv2.putText(img, status
-            , (550,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
-
         else:
             img = cv2.flip(img, 1)
-
-        
 
         img[125:200, 540:615] = button_overlay
 
