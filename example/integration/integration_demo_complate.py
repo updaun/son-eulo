@@ -375,7 +375,7 @@ def main(mode, mode_count, button_overlay, delete_count, delete_button_overlay, 
                             action = 1
                         elif right_hand_fingersUp_list_a0 == [0, 1, 1, 0, 0]:
                             action = 2
-                        elif right_hand_fingersUp_list_a0 == [0, 1, 1, 1, 0]:
+                        elif right_hand_fingersUp_list_a0 == [0, 1, 1, 1, 0] or right_hand_fingersUp_list_a0 == [1, 1, 1, 1, 0]:
                             action = 3
                         elif right_hand_fingersUp_list_a0 == [0, 1, 1, 1, 1]:
                             action = 4

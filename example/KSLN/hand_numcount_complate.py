@@ -55,7 +55,7 @@ while True:
                 number = 1
             elif right_hand_fingersUp_list_a0 == [0, 1, 1, 0, 0]:
                 number = 2
-            elif right_hand_fingersUp_list_a0 == [0, 1, 1, 1, 0]:
+            elif right_hand_fingersUp_list_a0 == [0, 1, 1, 1, 0] or right_hand_fingersUp_list_a0 == [1, 1, 1, 1, 0]:
                 number = 3
             elif right_hand_fingersUp_list_a0 == [0, 1, 1, 1, 1]:
                 number = 4
