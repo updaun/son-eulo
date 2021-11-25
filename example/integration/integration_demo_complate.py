@@ -92,7 +92,7 @@ def main(mode, mode_count, button_overlay):
     action = ''
     
     # User Interface Variable
-    button_overlay = overlayList[0]
+    button_overlay = overlayList[1]
 
     # Keyboard Variable
     cnt = 0
@@ -139,7 +139,7 @@ def main(mode, mode_count, button_overlay):
     cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
 
     while cap.isOpened():
-        action = 0
+        action = ''
         ret, img = cap.read()
         
         if this_action not in ['', ' ']:
@@ -311,6 +311,7 @@ def main(mode, mode_count, button_overlay):
                 index_finger_angle_1 = int(detector.findHandAngle(img, 8, 9, 5, draw=False))
                 index_finger_angle_2 = int(detector.findHandAngle(img, 8, 13, 5, draw=False))
                 index_finger_angle_3 = int(detector.findHandAngle(img, 8, 17, 5, draw=False))
+                index_finger_angle_4 = int(detector.findHandAngle(img, 4, 3, 0, draw=False))
                 total_index_angle = index_finger_angle_1 + index_finger_angle_2 + index_finger_angle_3
                 
                 middle_finger_angle_1 = 360 - int(detector.findHandAngle(img, 12, 5, 9, draw=False))
@@ -328,13 +329,20 @@ def main(mode, mode_count, button_overlay):
                         action = 3
                     elif right_hand_fingersUp_list_a0 == [0, 1, 1, 1, 1]:
                         action = 4
-                    elif right_hand_fingersUp_list_a0 == [1, 0, 1, 1, 1] and thumb_index_length < 30:
-                        action = 10  # 동그라미 10
-
+                    # elif right_hand_fingersUp_list_a0 == [1, 0, 1, 1, 1] and thumb_index_length < 30:
+                    #     action = 10  # 동그라미 10
+                    elif thumb_index_length < 30:
+                        if right_hand_fingersUp_list_a0 == [1, 0, 1, 1, 1]:
+                            action = 10
+                        elif right_hand_fingersUp_list_a0 == [1, 0, 0, 0, 0]:
+                            action = 0    
                 # 손바닥이 보임
                 if hand_lmlist[5][1] > hand_lmlist[17][1]:
                     if right_hand_fingersUp_list_a0 == [1, 0, 0, 0, 0]:
-                        action = 5
+                        if right_hand_fingersUp_list_a1 == [1, 1, 1, 1, 1]:
+                            action = 0
+                        else:
+                            action = 5
                     # 손가락을 살짝 구부려 10과 20 구분
                     if right_hand_fingersUp_list_a0[0] == 0 and right_hand_fingersUp_list_a0[2:] == [0, 0, 0] and total_index_angle < 140:
                         action = 10
@@ -383,7 +391,7 @@ def main(mode, mode_count, button_overlay):
                     if hand_lmlist[5][1] > hand_lmlist[17][1] and hand_lmlist[4][2] > hand_lmlist[8][2]:
                         if right_hand_fingersUp_list_a0 == [0, 1, 0, 0, 0] and hand_lmlist[8][2] < hand_lmlist[7][2]:
                             dcnt += 1
-                            action = 0
+                            action = ''
                             if max_detec > dcnt > min_detec:
                                 action = 11
                             elif dcnt > max_detec+10:
@@ -394,28 +402,28 @@ def main(mode, mode_count, button_overlay):
                     elif hand_lmlist[5][1] > hand_lmlist[17][1]:
                         if right_hand_fingersUp_list_a0 == [1, 0, 0, 0, 0]:
                             dcnt += 1
-                            action = 0
+                            action = ''
                             if max_detec > dcnt > min_detec:
                                 action = 15
                             elif dcnt > max_detec+10:
-                                action = 0
+                                action = ''
                                 cnt10 = 0
                                 dcnt = 0
                     elif hand_lmlist[5][2] < hand_lmlist[17][2] and hand_lmlist[4][2] < hand_lmlist[8][2]:
                         if right_hand_fingersUp_list_a1 == [1, 1, 0, 0, 0]:
                             dcnt += 1
-                            action = 0
+                            action = ''
                             if max_detec > dcnt > min_detec:
                                 action = 16
                             elif dcnt > max_detec+10:
-                                action = 0
+                                action = ''
                                 cnt10 = 0
                                 dcnt = 0
                                 
                     if action in num_lst:
                         flag = True
 
-                if action != 0:
+                if action != '':
                     if flag:
                         text_cnt += 1
                         if text_cnt % max_detec == 0:

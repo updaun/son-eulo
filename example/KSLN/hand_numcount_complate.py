@@ -20,7 +20,7 @@ num_lst = [11, 15, 16]
 flag = False
 
 while True:
-    number = 0
+    number = ''
 
     # defalut BGR img
     success, img = cap.read()
@@ -65,7 +65,10 @@ while True:
         # 손바닥이 보임
         if hand_lmList[5][1] > hand_lmList[17][1]:
             if right_hand_fingersUp_list_a0 == [1, 0, 0, 0, 0]:
-                number = 5
+                if right_hand_fingersUp_list_a1 == [1, 1, 1, 1, 1]:
+                    number = 0
+                else:
+                    number = 5
             # 손가락을 살짝 구부려 10과 20 구분
             if right_hand_fingersUp_list_a0[0] == 0 and right_hand_fingersUp_list_a0[2:] == [0, 0, 0] and total_index_angle < 140:
                 number = 10
@@ -114,32 +117,32 @@ while True:
             if hand_lmList[5][1] > hand_lmList[17][1] and hand_lmList[4][2] > hand_lmList[8][2]:
                 if right_hand_fingersUp_list_a0 == [0, 1, 0, 0, 0] and hand_lmList[8][2] < hand_lmList[7][2]:
                     dcnt += 1
-                    number = 0
+                    number = ''
                     if max_detec > dcnt > min_detec:
                         number = 11
                     elif dcnt > max_detec+10:
-                        number = 0
+                        number = ''
                         cnt10 = 0
                         dcnt = 0
                         # print("clear")
             elif hand_lmList[5][1] > hand_lmList[17][1]:
                 if right_hand_fingersUp_list_a0 == [1, 0, 0, 0, 0]:
                     dcnt += 1
-                    number = 0
+                    number = ''
                     if max_detec > dcnt > min_detec:
                         number = 15
                     elif dcnt > max_detec+10:
-                        number = 0
+                        number = ''
                         cnt10 = 0
                         dcnt = 0
             elif hand_lmList[5][2] < hand_lmList[17][2] and hand_lmList[4][2] < hand_lmList[8][2]:
                 if right_hand_fingersUp_list_a1 == [1, 1, 0, 0, 0]:
                     dcnt += 1
-                    number = 0
+                    number = ''
                     if max_detec > dcnt > min_detec:
                         number = 16
                     elif dcnt > max_detec+10:
-                        number = 0
+                        number = ''
                         cnt10 = 0
                         dcnt = 0
                         
@@ -154,18 +157,16 @@ while True:
     # Display Probability 
     cv2.putText(img, 'NUMBER'
                 , (2,18), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
+    cv2.putText(img, str(number)
+                , (25,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
 
-    if number != 0:
-        cv2.putText(img, str(number)
-                    , (25,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
-
-        if flag:
-            text_cnt += 1
-            if text_cnt % max_detec == 0:
-                cnt10 = 0
-                text_cnt = 0
-                dcnt = 0
-                flag = False
+    if flag:
+        text_cnt += 1
+        if text_cnt % max_detec == 0:
+            cnt10 = 0
+            text_cnt = 0
+            dcnt = 0
+            flag = False
     
     # 감지 안되었을 때
     if len(hand_lmList) == 0:
