@@ -111,7 +111,7 @@ def main(mode, mode_count, button_overlay):
         "ㄷ":"ㄸ",
         "ㅂ":"ㅃ"
         }
-    JJ_not_support = ['ㅈ', 'ㅉ', 'ㄷ', 'ㄸ', 'ㅂ', 'ㅃ']
+    siot = ['ㅅ', 'ㅆ']
     MM_lst = ['ㅗ', 'ㅜ']
     MM_dict = {
         "ㅏ":"ㅘ",
@@ -160,39 +160,62 @@ def main(mode, mode_count, button_overlay):
                 if jamo_dict and jamo_dict[0][1] >= int(status_cnt_conf*0.7):
                     tmp = jamo_dict[0][0]
                     status_lst_slice = list(deque(itertools.islice(status_lst, int(status_cnt_conf*0.5), status_cnt_conf-1)))
-                    # print("status_lst_slice", status_lst_slice)
-                    if jamo_join_li:
-                        # print("tmp", tmp)
-                        if tmp in J:
-                            if tmp in JJ_dict.keys():
-                                # 쌍자음
+                    print("status_lst_slice", status_lst_slice)
+                    print("tmp", tmp)
+                    if tmp in siot:
+                        if len(jamo_join_li) == 1:
+                            if 'Move' in status_lst_slice: 
+                                jamo_join_li.append('ㅆ')
+                            else:
+                                jamo_join_li.append('ㅅ')
+                        else:
+                            if jamo_join_li[-1] in J:
+                                jamo_join_li.append('ㅠ')
+                            else:
                                 if 'Move' in status_lst_slice: 
-                                        jamo_join_li.append(JJ_dict[tmp])
+                                    jamo_join_li.append('ㅆ')
                                 else:
-                                    jamo_join_li.append(tmp)
-                            else:
-                                jamo_join_li.append(tmp)
-                        elif tmp in M:
-                            # 모음 - 모음 : 이중 모음
-                            if jamo_join_li[-1] in MM_lst and tmp in MM_dict.keys():
-                                jamo_join_li.pop()
-                                jamo_join_li.append(MM_dict[tmp])
-                            else:
-                                jamo_join_li.append(tmp)
-                    # 맨 처음 시작할 때 자음부터 시작
+                                    jamo_join_li.append('ㅅ')
                     elif tmp in J:
-                        if tmp in JJ_dict.keys() and 'Move' in status_lst_slice:
-                            jamo_join_li.append(JJ_dict[tmp])
+                        if tmp in JJ_dict.keys():
+                            # 쌍자음
+                            if 'Move' in status_lst_slice: 
+                                    jamo_join_li.append(JJ_dict[tmp])
+                            else:
+                                jamo_join_li.append(tmp)
                         else:
                             jamo_join_li.append(tmp)
-                
+                    elif tmp in M:
+                        # 모음 - 모음 : 이중 모음
+                        if jamo_join_li[-1] in MM_lst and tmp in MM_dict.keys():
+                            jamo_join_li.pop()
+                            jamo_join_li.append(MM_dict[tmp])
+                        else:
+                            jamo_join_li.append(tmp)
+                    elif tmp.isdigit():
+                        if len(jamo_join_li) >= 3 and jamo_join_li[-2].isdigit() and jamo_join_li[-1].isdigit():
+                            if int(jamo_join_li[-2] + jamo_join_li[-1]) % 10 == 0 and len(tmp) == 1:
+                                tmp = str(int(jamo_join_li[-2] + jamo_join_li[-1]) + int(tmp))
+                                jamo_join_li.pop()
+                                jamo_join_li.pop()
+                                for i in tmp:
+                                    jamo_join_li.append(i)
+                            elif tmp in ["11", "15", "16"]:
+                                if jamo_join_li[-2] == "1" and jamo_join_li[-1] == "0":
+                                    jamo_join_li.pop()
+                                    jamo_join_li.pop()
+                                    for i in tmp:
+                                        jamo_join_li.append(i)
+                            else:
+                                for i in tmp:
+                                    jamo_join_li.append(i)
+                        else:
+                            for i in tmp:
+                                jamo_join_li.append(i)
                 jamo_li = []
                 cnt = -int(status_cnt_conf)
                 # print("jamo_join_li", jamo_join_li)
                 # print("cnt", cnt)
-                
-        if not ret:
-            break
 
         img, result = detector.findHandswithResult(img, draw=False)
         
@@ -432,7 +455,7 @@ def main(mode, mode_count, button_overlay):
                             dcnt = 0
                             flag = False
 
-                action = str(action)
+            action = str(action)
 
             action_seq.append(action)
 
@@ -448,51 +471,53 @@ def main(mode, mode_count, button_overlay):
 
             # wrist moving check
             status, img = check_moving(result, img, point_history, point_history_classifier, finger_gesture_history, point_history_classifier_labels, draw=False)
-            
-            img = cv2.flip(img, 1)
-            # 자음 모음 결합
-            s2_lst = list(join_jamos(split_syllables(jamo_join_li)))
-            if len(s2_lst) >= 2:
-                for i in s2_lst[:-1]:
-                    if i in J or i in M:
-                        s2_lst.remove(i)
-                        jamo_join_li = s2_lst
-            s2_lst_remove = join_jamos(split_syllables(s2_lst))
-            
-            # Get status box
-            cv2.rectangle(img, (0,0), (1000, 60), (245, 117, 16), -1)
-            
-            # 한글 적용
-            b,g,r,a = 255,255,255,0
-            # fontpath = "fonts/gulim.ttc" # 30, (30, 25)
-            fontpath = "fonts/KoPubWorld Dotum Bold.ttf"
-            img_pil = Image.fromarray(img)
-            font = ImageFont.truetype(fontpath, 35)
-            draw = ImageDraw.Draw(img_pil)
-            draw.text((20, 15), f'{this_action}', font=font, fill=(b,g,r,a))
-            draw.text((200, 15), f'{s2_lst_remove}', font=font, fill=(b,g,r,a))
-            img = np.array(img_pil)
-
-            # Display Probability
-            cv2.putText(img, 'INPUT'
-                        , (15,18), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
-            cv2.putText(img, 'MODEL'
-                        , (100,18), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
-            cv2.putText(img, f'{select_model}'
-                        , (100,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
-            cv2.putText(img, 'OUTPUT'
-                        , (200,18), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
-
-            # Display Probability
-            cv2.putText(img, 'STATUS'
-                        , (550,18), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
-            cv2.putText(img, status
-            , (550,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
 
         else:
-            img = cv2.flip(img, 1)
+            jamo_li = []
+            jamo_join_li.append(' ')
+            if jamo_join_li:
+                if len(jamo_join_li) >= 2 and jamo_join_li[-1] == ' ':
+                        jamo_join_li.remove(" ")
 
+        img = cv2.flip(img, 1)
+
+        # 자음 모음 결합
+        s_lst = list(join_jamos(split_syllables(jamo_join_li)))
+        for i in s_lst[:-1]:
+            if i in J or i in M:
+                s_lst.remove(i)
+                jamo_join_li = s_lst
+        s2_lst_remove = join_jamos(split_syllables(s_lst))
         
+        # Get status box
+        cv2.rectangle(img, (0,0), (1000, 60), (245, 117, 16), -1)
+        
+        # 한글 적용
+        b,g,r,a = 255,255,255,0
+        # fontpath = "fonts/gulim.ttc" # 30, (30, 25)
+        fontpath = "fonts/KoPubWorld Dotum Bold.ttf"
+        img_pil = Image.fromarray(img)
+        font = ImageFont.truetype(fontpath, 35)
+        draw = ImageDraw.Draw(img_pil)
+        draw.text((20, 15), f'{this_action}', font=font, fill=(b,g,r,a))
+        draw.text((200, 15), f'{s2_lst_remove}', font=font, fill=(b,g,r,a))
+        img = np.array(img_pil)
+
+        # Display Probability
+        cv2.putText(img, 'INPUT'
+                    , (15,18), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
+        cv2.putText(img, 'MODEL'
+                    , (100,18), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
+        cv2.putText(img, f'{select_model}'
+                    , (100,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+        cv2.putText(img, 'OUTPUT'
+                    , (200,18), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
+
+        # Display Probability
+        cv2.putText(img, 'STATUS'
+                    , (550,18), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
+        cv2.putText(img, status
+        , (550,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
 
         img[125:200, 540:615] = button_overlay
 
@@ -511,10 +536,13 @@ def calc_landmark_list(image, landmarks):
     # Keypoint
     for _, landmark in enumerate(landmarks.landmark):
         landmark_x = min(int(landmark.x * image_width), image_width - 1)
-        landmark_y = min(int(landmark.y * image_height), image_height - 1)
+        # landmark_y = min(int(landmark.y * image_height), image_height - 1)
         # landmark_z = landmark.z
 
-        landmark_point.append([landmark_x, landmark_y])
+        ## 좌우이동만 인식하기 위해 y값 제거 ##
+        ## 민감도 절감을 위한 x값 조정 ##
+        # landmark_point.append([landmark_x, landmark_y])
+        landmark_point.append([landmark_x // 1.5, 0])
 
     return landmark_point
 
@@ -656,7 +684,7 @@ def wrist_angle_calculator(hand_lmlist):
     return wrist_angle, similar_text_res
 
 # User interface variables
-mode = False
+mode = True
 mode_count = 0
 button_overlay = overlayList[0]
 
