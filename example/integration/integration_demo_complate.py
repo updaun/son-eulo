@@ -219,10 +219,13 @@ def main(mode, mode_count, button_overlay, delete_count, delete_button_overlay, 
         img, result = detector.findHandswithResult(img, draw=False)
         
         hand_lmlist, _ = detector.findPosition(img, draw=False)
+
         
         if result.multi_hand_landmarks is not None:
             x1, y1 = hand_lmlist[8][1:3]
             wrist_x, wrist_y = hand_lmlist[0][1:3]
+            thumb_index_angle = int(detector.findHandAngle(img, 4, 2, 5, draw=False))
+            print(thumb_index_angle)
 
             # change mode button
             if mode == True:
@@ -304,10 +307,10 @@ def main(mode, mode_count, button_overlay, delete_count, delete_button_overlay, 
 
                         action = actions_m3[i_pred]
                         if action == 'ㄱ':
-                            if hand_lmlist[4][1] < hand_lmlist[5][1]:
+                            if thumb_index_angle > 250:
                                 action = 'ㅜ'
                         elif action == 'ㅜ':
-                            if hand_lmlist[4][1] > hand_lmlist[5][1]:
+                            if 35 < thumb_index_angle < 90:
                                 action = 'ㄱ'
 
                     elif hand_lmlist[5][1] > hand_lmlist[0][1] and hand_lmlist[5][2] < hand_lmlist[17][2] and (wrist_angle <= 300 or wrist_angle >= 350):
