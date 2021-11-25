@@ -78,7 +78,8 @@ def main(mode, mode_count, button_overlay, delete_count, delete_button_overlay, 
     max_detec = 30
     num_lst = [11, 15, 16]
     flag = False
-
+    choice = 0
+    
     # Korean Variable
     seq_length = 10
     seq = []
@@ -91,7 +92,7 @@ def main(mode, mode_count, button_overlay, delete_count, delete_button_overlay, 
     action = ''
     
     # User Interface Variable
-    button_overlay = overlayList[1]
+    button_overlay = overlayList[0]
 
     # Keyboard Variable
     cnt = 0
@@ -230,23 +231,29 @@ def main(mode, mode_count, button_overlay, delete_count, delete_button_overlay, 
             # change mode button
             if mode == True:
                 if 25 < x1 < 100 and 125 < y1 < 200:
-                    mode_count += 1
-                    button_overlay = overlayList[2]
+                    if choice != 0:
+                        mode_count += 1
+                        button_overlay = overlayList[2]
                     if mode_count > 15:
+                        choice = 0
                         mode = False
                         mode_count = 0
                         button_overlay = overlayList[1]
                 else:
+                    choice += 1
                     button_overlay = overlayList[0]        
             else:
                 if 25 < x1 < 100 and 125 < y1 < 200:
-                    mode_count +=1
-                    button_overlay = overlayList[3]
+                    if choice != 0:
+                        mode_count +=1
+                        button_overlay = overlayList[3]
                     if mode_count > 15:
+                        choice = 0
                         mode = True
                         mode_count = 0
                         button_overlay = overlayList[0]
                 else:
+                    choice += 1
                     button_overlay = overlayList[1]
             
             # output delete button
@@ -387,10 +394,10 @@ def main(mode, mode_count, button_overlay, delete_count, delete_button_overlay, 
                             else:
                                 action = 5
                         # 손가락을 살짝 구부려 10과 20 구분
-                        if right_hand_fingersUp_list_a0[0] == 0 and right_hand_fingersUp_list_a0[2:] == [0, 0, 0] and total_index_angle < 140:
+                        if right_hand_fingersUp_list_a0[0] == 0 and right_hand_fingersUp_list_a0[2:] == [0, 0, 0] and total_index_angle < 140 and total_middle_angle > 300:
                             action = 10
                             cnt10 += 1
-                        elif right_hand_fingersUp_list_a0[0] == 0 and right_hand_fingersUp_list_a0[3:] == [0, 0] and total_index_angle < 145 and total_middle_angle < 165:
+                        elif right_hand_fingersUp_list_a0[0] == 0 and right_hand_fingersUp_list_a0[3:] == [0, 0] and total_index_angle < 140 and total_middle_angle < 150:
                             action = 20
 
                     # 손등이 보임, 수향이 몸 안쪽으로 향함, 엄지가 들려 있음
