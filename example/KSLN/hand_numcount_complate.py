@@ -70,10 +70,10 @@ while True:
                 else:
                     number = 5
             # 손가락을 살짝 구부려 10과 20 구분
-            if right_hand_fingersUp_list_a0[0] == 0 and right_hand_fingersUp_list_a0[2:] == [0, 0, 0] and total_index_angle < 140:
+            if right_hand_fingersUp_list_a0[0] == 0 and right_hand_fingersUp_list_a0[2:] == [0, 0, 0] and total_index_angle < 140 and total_middle_angle > 300:
                 number = 10
                 cnt10 += 1
-            elif right_hand_fingersUp_list_a0[0] == 0 and right_hand_fingersUp_list_a0[3:] == [0, 0] and total_index_angle < 145 and total_middle_angle < 165:
+            elif right_hand_fingersUp_list_a0[0] == 0 and right_hand_fingersUp_list_a0[3:] == [0, 0] and total_index_angle < 140 and total_middle_angle < 150:
                 number = 20
 
         # 손등이 보임, 수향이 몸 안쪽으로 향함, 엄지가 들려 있음
