@@ -25,29 +25,28 @@ detector = htm.handDetector(max_num_hands=1)
 # ------------------- 모델 ------------------- #
 
 ## m1 방향에 따라 분류(손바닥 위)
-actions_m1 = ['ㅁ','ㅂ','ㅍ','ㅇ','ㅏ','ㅐ','ㅑ','ㅒ','ㅣ']
-interpreter_m1 = tf.lite.Interpreter(model_path="models/JM/vector_norm/preprocessing_model1_seq10.tflite")
+actions_m1 = ['ㅁ','ㅂ','ㅍ','ㅇ','ㅇ','ㅎ','ㅏ','ㅐ','ㅑ','ㅒ','ㅣ']
+interpreter_m1 = tf.lite.Interpreter(model_path="models/modelvector/model1.tflite")
 interpreter_m1.allocate_tensors()
 
 ## m2 방향에 따라 분류(손등 위)
-actions_m2 = ['ㅇ','ㅗ','ㅚ','ㅛ']
-interpreter_m2 = tf.lite.Interpreter(model_path="models/JM/vector_norm/preprocessing_model2_seq10.tflite")
+actions_m2 = ['ㅇ','ㅎ','ㅗ','ㅚ','ㅛ']
+interpreter_m2 = tf.lite.Interpreter(model_path="models/modelvector/model2.tflite")
 interpreter_m2.allocate_tensors()
 
 ## m3 방향에 따라 분류(아래)
 actions_m3 = ['ㄱ','ㅈ','ㅊ','ㅋ','ㅅ','ㅜ','ㅟ']
-interpreter_m3 = tf.lite.Interpreter(model_path="models/JM/vector_norm/preprocessing_model3_seq10.tflite")
+interpreter_m3 = tf.lite.Interpreter(model_path="models/modelvector/model3.tflite")
 interpreter_m3.allocate_tensors()
 
 ## m4 방향에 따라 분류 (앞)
-# actions_m4 = ['ㅎ','ㅓ','ㅔ','ㅕ','ㅖ']
-actions_m4 = ['ㅎ']
-interpreter_m4 = tf.lite.Interpreter(model_path="models/JM/vector_norm/preprocessing_model4_seq10.tflite")
+actions_m4 = ['ㅎ','ㅓ','ㅔ','ㅕ','ㅖ']
+interpreter_m4 = tf.lite.Interpreter(model_path="models/modelvector/model4.tflite")
 interpreter_m4.allocate_tensors()
 
 ## m5 방향에 따라 분류 (옆)
-actions_m5 = ['ㄴ','ㄷ','ㄹ','ㅡ','ㅢ']  
-interpreter_m5 = tf.lite.Interpreter(model_path="models/JM/vector_norm/preprocessing_model5_seq10.tflite")
+actions_m5 = ['ㄴ','ㄷ','ㄹ','ㅡ','ㅢ']
+interpreter_m5 = tf.lite.Interpreter(model_path="models/modelvector/model5.tflite")
 interpreter_m5.allocate_tensors()
 
 # Get input and output tensors.
@@ -70,7 +69,7 @@ for imPath in myList:
 
 
 
-def main(mode, mode_count, button_overlay):
+def main(mode, mode_count, button_overlay, delete_count, delete_button_overlay, s2_lst_remove):
     # action Variable
     cnt10 = 0
     text_cnt = 0
@@ -223,6 +222,9 @@ def main(mode, mode_count, button_overlay):
         
         if result.multi_hand_landmarks is not None:
             x1, y1 = hand_lmlist[8][1:3]
+            wrist_x, wrist_y = hand_lmlist[0][1:3]
+
+            # change mode button
             if mode == True:
                 if 25 < x1 < 100 and 125 < y1 < 200:
                     mode_count += 1
@@ -243,241 +245,256 @@ def main(mode, mode_count, button_overlay):
                         button_overlay = overlayList[0]
                 else:
                     button_overlay = overlayList[1]
-
-            # korean mode
-            if mode == True:
-                wrist_angle, similar_text_res = wrist_angle_calculator(hand_lmlist)
-
-                d = vector_normalization(result)
-
-                seq.append(d)
-
-                if len(seq) < seq_length:
-                    continue
-
-                input_data = np.expand_dims(np.array(seq[-seq_length:], dtype=np.float32), axis=0)
-                input_data = np.array(input_data, dtype=np.float32)
-
-                if hand_lmlist[5][1] > hand_lmlist[17][1] and hand_lmlist[5][2] < hand_lmlist[0][2] and hand_lmlist[17][2] < hand_lmlist[0][2]:
-                    # print("model m1")
-                    select_model = "m1"
-                    i_pred, conf = model_predict(input_data, interpreter_m1)
-                    if conf < confidence:
-                        continue
-
-                    action = actions_m1[i_pred]
-
-                elif hand_lmlist[5][1] < hand_lmlist[17][1] and hand_lmlist[5][2] < hand_lmlist[0][2] and hand_lmlist[17][2] < hand_lmlist[0][2]:
-                    # print("model m2")
-                    select_model = "m2"
-                    i_pred, conf = model_predict(input_data, interpreter_m2)
-                    
-                    if conf < confidence:
-                        continue
-
-                    action = actions_m2[i_pred]
-
-                elif hand_lmlist[5][1] > hand_lmlist[17][1] and hand_lmlist[0][2] < hand_lmlist[5][2] and hand_lmlist[0][2] < hand_lmlist[17][2]:
-                    # print("model m3")
-                    select_model = "m3"
-                    i_pred, conf = model_predict(input_data, interpreter_m3)
-
-                    if conf < confidence:
-                        continue
-
-                    action = actions_m3[i_pred]
-                    if action == 'ㄱ':
-                        if hand_lmlist[4][1] < hand_lmlist[5][1]:
-                            action = 'ㅜ'
-                    elif action == 'ㅜ':
-                        if hand_lmlist[4][1] > hand_lmlist[5][1]:
-                            action = 'ㄱ'
-
-                elif hand_lmlist[5][1] > hand_lmlist[0][1] and hand_lmlist[5][2] < hand_lmlist[17][2] and (wrist_angle <= 300 or wrist_angle >= 350):
-                    # print("model m4")
-                    # select_model = "m4"
-                    # i_pred, conf = model_predict(input_data, interpreter_m4)
-
-                    # if conf < confidence:
-                    #     continue
-
-                    # action = actions_m4[i_pred]
-                    pass
-                
-                elif hand_lmlist[5][1] > hand_lmlist[0][1] and hand_lmlist[5][2] < hand_lmlist[17][2]:
-                    # print("model m5")
-                    select_model = "m5"
-
-                    i_pred, conf = model_predict(input_data, interpreter_m5)
-
-                    if conf < confidence:
-                        continue
-
-                    action = actions_m5[i_pred]
-                
-                    if action == 'ㄹ':
-                        if similar_text_res < 0:
-                            action = 'ㅌ'
-                        elif 0 < similar_text_res < 20:
-                            action = 'ㄹ'
-
-                
-            # action mode
+            
+            # output delete button
+            if 25 < x1 < 100 and 300 < y1 < 375:
+                delete_count += 1
+                delete_button_overlay = overlayList[5]
+                if delete_count > 15:
+                    jamo_join_li = deque()
+                    s2_lst_remove = ''
+                    delete_count = 0
             else:
-                # x축을 기준으로 손가락 리스트
-                right_hand_fingersUp_list_a0 = detector.fingersUp(axis=False)
-                # y축을 기준으로 손가락 리스트
-                right_hand_fingersUp_list_a1 = detector.fingersUp(axis=True)
-                # 엄지 끝과 검지 끝의 거리 측정
-                thumb_index_length = detector.findLength(4, 8)
+                delete_count = 0
+                delete_button_overlay = overlayList[4]
 
-                index_finger_angle_1 = int(detector.findHandAngle(img, 8, 9, 5, draw=False))
-                index_finger_angle_2 = int(detector.findHandAngle(img, 8, 13, 5, draw=False))
-                index_finger_angle_3 = int(detector.findHandAngle(img, 8, 17, 5, draw=False))
-                index_finger_angle_4 = int(detector.findHandAngle(img, 4, 3, 0, draw=False))
-                total_index_angle = index_finger_angle_1 + index_finger_angle_2 + index_finger_angle_3
-                
-                middle_finger_angle_1 = 360 - int(detector.findHandAngle(img, 12, 5, 9, draw=False))
-                middle_finger_angle_2 = int(detector.findHandAngle(img, 12, 13, 9, draw=False))
-                middle_finger_angle_3 = int(detector.findHandAngle(img, 12, 17, 9, draw=False))
-                total_middle_angle = middle_finger_angle_1 + middle_finger_angle_2 + middle_finger_angle_3
-                
-                # 손바닥이 보임, 수향이 위쪽
-                if hand_lmlist[5][1] > hand_lmlist[17][1] and hand_lmlist[4][2] > hand_lmlist[8][2]:
-                    if right_hand_fingersUp_list_a0 == [0, 1, 0, 0, 0] and hand_lmlist[8][2] < hand_lmlist[7][2]:
-                        action = 1
-                    elif right_hand_fingersUp_list_a0 == [0, 1, 1, 0, 0]:
-                        action = 2
-                    elif right_hand_fingersUp_list_a0 == [0, 1, 1, 1, 0]:
-                        action = 3
-                    elif right_hand_fingersUp_list_a0 == [0, 1, 1, 1, 1]:
-                        action = 4
-                    # elif right_hand_fingersUp_list_a0 == [1, 0, 1, 1, 1] and thumb_index_length < 30:
-                    #     action = 10  # 동그라미 10
-                    elif thumb_index_length < 30:
-                        if right_hand_fingersUp_list_a0 == [1, 0, 1, 1, 1]:
-                            action = 10
-                        elif right_hand_fingersUp_list_a0 == [1, 0, 0, 0, 0]:
-                            action = 0    
-                # 손바닥이 보임
-                if hand_lmlist[5][1] > hand_lmlist[17][1]:
-                    if right_hand_fingersUp_list_a0 == [1, 0, 0, 0, 0]:
-                        if right_hand_fingersUp_list_a1 == [1, 1, 1, 1, 1]:
-                            action = 0
-                        else:
-                            action = 5
-                    # 손가락을 살짝 구부려 10과 20 구분
-                    if right_hand_fingersUp_list_a0[0] == 0 and right_hand_fingersUp_list_a0[2:] == [0, 0, 0] and total_index_angle < 140:
-                        action = 10
-                        cnt10 += 1
-                    elif right_hand_fingersUp_list_a0[0] == 0 and right_hand_fingersUp_list_a0[3:] == [0, 0] and total_index_angle < 145 and total_middle_angle < 165:
-                        action = 20
+            # action area
+            # cv2.rectangle(img, (100, 100), (540, 400), (255, 255, 255), 1)
+            if 100 < x1 < 540 and 100 < y1 < 400:
+                # korean mode
+                if mode == True:
+                    wrist_angle, similar_text_res = wrist_angle_calculator(hand_lmlist)
 
-                # 손등이 보임, 수향이 몸 안쪽으로 향함, 엄지가 들려 있음
-                if hand_lmlist[5][2] < hand_lmlist[17][2] and hand_lmlist[4][2] < hand_lmlist[8][2]:
-                    if right_hand_fingersUp_list_a1 == [1, 1, 0, 0, 0]:
-                        action = 6
-                    elif right_hand_fingersUp_list_a1 == [1, 1, 1, 0, 0]:
-                        action = 7
-                    elif right_hand_fingersUp_list_a1 == [1, 1, 1, 1, 0]:
-                        action = 8
-                    elif right_hand_fingersUp_list_a1 == [1, 1, 1, 1, 1]:
-                        action = 9
+                    d = vector_normalization(result)
 
-                # 손등이 보이고, 수향이 몸 안쪽으로 향함
-                if hand_lmlist[5][2] < hand_lmlist[17][2] and hand_lmlist[1][2] < hand_lmlist[13][2]:
-                    # 엄지가 숨어짐
-                    if hand_lmlist[4][2] + 30 > hand_lmlist[8][2]:
-                        if right_hand_fingersUp_list_a1[2:] == [1, 0, 0] and hand_lmlist[8][1] <= hand_lmlist[6][1] + 20:
-                            action = 12
-                        elif right_hand_fingersUp_list_a1[2:] == [1, 1, 0] and hand_lmlist[8][1] <= hand_lmlist[6][1] + 20:
-                            action = 13
-                        elif right_hand_fingersUp_list_a1[2:] == [1, 1, 1] and hand_lmlist[8][1] <= hand_lmlist[6][1] + 20:
-                            action = 14
-                    # 엄지가 보임
-                    else:
-                        if right_hand_fingersUp_list_a1[2:] == [1, 0, 0] and hand_lmlist[8][1] <= hand_lmlist[6][1] + 20:
-                            action = 17
-                        elif right_hand_fingersUp_list_a1[2:] == [1, 1, 0] and hand_lmlist[8][1] <= hand_lmlist[6][1] + 20:
-                            action = 18
-                        elif right_hand_fingersUp_list_a1[2:] == [1, 1, 1] and hand_lmlist[8][1] <= hand_lmlist[6][1] + 20:
-                            action = 19    
+                    seq.append(d)
 
-                if cnt10 > (max_detec - min_detec):
-                    action = 10
-                    flag = True
-                    # print("clear")
-                    # dcnt = 0
+                    if len(seq) < seq_length:
+                        continue
+
+                    input_data = np.expand_dims(np.array(seq[-seq_length:], dtype=np.float32), axis=0)
+                    input_data = np.array(input_data, dtype=np.float32)
+
+                    if hand_lmlist[5][1] > hand_lmlist[17][1] and hand_lmlist[5][2] < hand_lmlist[0][2] and hand_lmlist[17][2] < hand_lmlist[0][2]:
+                        # print("model m1")
+                        select_model = "m1"
+                        i_pred, conf = model_predict(input_data, interpreter_m1)
+                        if conf < confidence:
+                            continue
+
+                        action = actions_m1[i_pred]
+
+                    elif hand_lmlist[5][1] < hand_lmlist[17][1] and hand_lmlist[5][2] < hand_lmlist[0][2] and hand_lmlist[17][2] < hand_lmlist[0][2]:
+                        # print("model m2")
+                        select_model = "m2"
+                        i_pred, conf = model_predict(input_data, interpreter_m2)
+                        
+                        if conf < confidence:
+                            continue
+
+                        action = actions_m2[i_pred]
+
+                    elif hand_lmlist[5][1] > hand_lmlist[17][1] and hand_lmlist[0][2] < hand_lmlist[5][2] and hand_lmlist[0][2] < hand_lmlist[17][2]:
+                        # print("model m3")
+                        select_model = "m3"
+                        i_pred, conf = model_predict(input_data, interpreter_m3)
+
+                        if conf < confidence:
+                            continue
+
+                        action = actions_m3[i_pred]
+                        if action == 'ㄱ':
+                            if hand_lmlist[4][1] < hand_lmlist[5][1]:
+                                action = 'ㅜ'
+                        elif action == 'ㅜ':
+                            if hand_lmlist[4][1] > hand_lmlist[5][1]:
+                                action = 'ㄱ'
+
+                    elif hand_lmlist[5][1] > hand_lmlist[0][1] and hand_lmlist[5][2] < hand_lmlist[17][2] and (wrist_angle <= 300 or wrist_angle >= 350):
+                        # print("model m4")
+                        select_model = "m4"
+                        i_pred, conf = model_predict(input_data, interpreter_m4)
+
+                        if conf < confidence:
+                            continue
+
+                        action = actions_m4[i_pred]
+                        # pass
                     
+                    elif hand_lmlist[5][1] > hand_lmlist[0][1] and hand_lmlist[5][2] < hand_lmlist[17][2]:
+                        # print("model m5")
+                        select_model = "m5"
+
+                        i_pred, conf = model_predict(input_data, interpreter_m5)
+
+                        if conf < confidence:
+                            continue
+
+                        action = actions_m5[i_pred]
                     
-                elif cnt10 > min_detec:
+                        if action == 'ㄹ':
+                            if similar_text_res < 0:
+                                action = 'ㅌ'
+                            elif 0 < similar_text_res < 20:
+                                action = 'ㄹ'
+
+                    
+                # Number mode
+                else:
+                    # x축을 기준으로 손가락 리스트
+                    right_hand_fingersUp_list_a0 = detector.fingersUp(axis=False)
+                    # y축을 기준으로 손가락 리스트
+                    right_hand_fingersUp_list_a1 = detector.fingersUp(axis=True)
+                    # 엄지 끝과 검지 끝의 거리 측정
+                    thumb_index_length = detector.findLength(4, 8)
+
+                    index_finger_angle_1 = int(detector.findHandAngle(img, 8, 9, 5, draw=False))
+                    index_finger_angle_2 = int(detector.findHandAngle(img, 8, 13, 5, draw=False))
+                    index_finger_angle_3 = int(detector.findHandAngle(img, 8, 17, 5, draw=False))
+                    index_finger_angle_4 = int(detector.findHandAngle(img, 4, 3, 0, draw=False))
+                    total_index_angle = index_finger_angle_1 + index_finger_angle_2 + index_finger_angle_3
+                    
+                    middle_finger_angle_1 = 360 - int(detector.findHandAngle(img, 12, 5, 9, draw=False))
+                    middle_finger_angle_2 = int(detector.findHandAngle(img, 12, 13, 9, draw=False))
+                    middle_finger_angle_3 = int(detector.findHandAngle(img, 12, 17, 9, draw=False))
+                    total_middle_angle = middle_finger_angle_1 + middle_finger_angle_2 + middle_finger_angle_3
+                    
+                    # 손바닥이 보임, 수향이 위쪽
                     if hand_lmlist[5][1] > hand_lmlist[17][1] and hand_lmlist[4][2] > hand_lmlist[8][2]:
                         if right_hand_fingersUp_list_a0 == [0, 1, 0, 0, 0] and hand_lmlist[8][2] < hand_lmlist[7][2]:
-                            dcnt += 1
-                            action = ''
-                            if max_detec > dcnt > min_detec:
-                                action = 11
-                            elif dcnt > max_detec+10:
-                                action = 0
-                                cnt10 = 0
-                                dcnt = 0
-                                # print("clear")
-                    elif hand_lmlist[5][1] > hand_lmlist[17][1]:
+                            action = 1
+                        elif right_hand_fingersUp_list_a0 == [0, 1, 1, 0, 0]:
+                            action = 2
+                        elif right_hand_fingersUp_list_a0 == [0, 1, 1, 1, 0]:
+                            action = 3
+                        elif right_hand_fingersUp_list_a0 == [0, 1, 1, 1, 1]:
+                            action = 4
+                        # elif right_hand_fingersUp_list_a0 == [1, 0, 1, 1, 1] and thumb_index_length < 30:
+                        #     action = 10  # 동그라미 10
+                        elif thumb_index_length < 30:
+                            if right_hand_fingersUp_list_a0 == [1, 0, 1, 1, 1]:
+                                action = 10
+                            elif right_hand_fingersUp_list_a0 == [1, 0, 0, 0, 0]:
+                                action = 0    
+                    # 손바닥이 보임
+                    if hand_lmlist[5][1] > hand_lmlist[17][1]:
                         if right_hand_fingersUp_list_a0 == [1, 0, 0, 0, 0]:
-                            dcnt += 1
-                            action = ''
-                            if max_detec > dcnt > min_detec:
-                                action = 15
-                            elif dcnt > max_detec+10:
-                                action = ''
-                                cnt10 = 0
-                                dcnt = 0
-                    elif hand_lmlist[5][2] < hand_lmlist[17][2] and hand_lmlist[4][2] < hand_lmlist[8][2]:
+                            if right_hand_fingersUp_list_a1 == [1, 1, 1, 1, 1]:
+                                action = 0
+                            else:
+                                action = 5
+                        # 손가락을 살짝 구부려 10과 20 구분
+                        if right_hand_fingersUp_list_a0[0] == 0 and right_hand_fingersUp_list_a0[2:] == [0, 0, 0] and total_index_angle < 140:
+                            action = 10
+                            cnt10 += 1
+                        elif right_hand_fingersUp_list_a0[0] == 0 and right_hand_fingersUp_list_a0[3:] == [0, 0] and total_index_angle < 145 and total_middle_angle < 165:
+                            action = 20
+
+                    # 손등이 보임, 수향이 몸 안쪽으로 향함, 엄지가 들려 있음
+                    if hand_lmlist[5][2] < hand_lmlist[17][2] and hand_lmlist[4][2] < hand_lmlist[8][2]:
                         if right_hand_fingersUp_list_a1 == [1, 1, 0, 0, 0]:
-                            dcnt += 1
-                            action = ''
-                            if max_detec > dcnt > min_detec:
-                                action = 16
-                            elif dcnt > max_detec+10:
-                                action = ''
-                                cnt10 = 0
-                                dcnt = 0
-                                
-                    if action in num_lst:
+                            action = 6
+                        elif right_hand_fingersUp_list_a1 == [1, 1, 1, 0, 0]:
+                            action = 7
+                        elif right_hand_fingersUp_list_a1 == [1, 1, 1, 1, 0]:
+                            action = 8
+                        elif right_hand_fingersUp_list_a1 == [1, 1, 1, 1, 1]:
+                            action = 9
+
+                    # 손등이 보이고, 수향이 몸 안쪽으로 향함
+                    if hand_lmlist[5][2] < hand_lmlist[17][2] and hand_lmlist[1][2] < hand_lmlist[13][2]:
+                        # 엄지가 숨어짐
+                        if hand_lmlist[4][2] + 30 > hand_lmlist[8][2]:
+                            if right_hand_fingersUp_list_a1[2:] == [1, 0, 0] and hand_lmlist[8][1] <= hand_lmlist[6][1] + 20:
+                                action = 12
+                            elif right_hand_fingersUp_list_a1[2:] == [1, 1, 0] and hand_lmlist[8][1] <= hand_lmlist[6][1] + 20:
+                                action = 13
+                            elif right_hand_fingersUp_list_a1[2:] == [1, 1, 1] and hand_lmlist[8][1] <= hand_lmlist[6][1] + 20:
+                                action = 14
+                        # 엄지가 보임
+                        else:
+                            if right_hand_fingersUp_list_a1[2:] == [1, 0, 0] and hand_lmlist[8][1] <= hand_lmlist[6][1] + 20:
+                                action = 17
+                            elif right_hand_fingersUp_list_a1[2:] == [1, 1, 0] and hand_lmlist[8][1] <= hand_lmlist[6][1] + 20:
+                                action = 18
+                            elif right_hand_fingersUp_list_a1[2:] == [1, 1, 1] and hand_lmlist[8][1] <= hand_lmlist[6][1] + 20:
+                                action = 19    
+
+                    if cnt10 > (max_detec - min_detec):
+                        action = 10
                         flag = True
+                        # print("clear")
+                        # dcnt = 0
+                        
+                        
+                    elif cnt10 > min_detec:
+                        if hand_lmlist[5][1] > hand_lmlist[17][1] and hand_lmlist[4][2] > hand_lmlist[8][2]:
+                            if right_hand_fingersUp_list_a0 == [0, 1, 0, 0, 0] and hand_lmlist[8][2] < hand_lmlist[7][2]:
+                                dcnt += 1
+                                action = ''
+                                if max_detec > dcnt > min_detec:
+                                    action = 11
+                                elif dcnt > max_detec+10:
+                                    action = 0
+                                    cnt10 = 0
+                                    dcnt = 0
+                                    # print("clear")
+                        elif hand_lmlist[5][1] > hand_lmlist[17][1]:
+                            if right_hand_fingersUp_list_a0 == [1, 0, 0, 0, 0]:
+                                dcnt += 1
+                                action = ''
+                                if max_detec > dcnt > min_detec:
+                                    action = 15
+                                elif dcnt > max_detec+10:
+                                    action = ''
+                                    cnt10 = 0
+                                    dcnt = 0
+                        elif hand_lmlist[5][2] < hand_lmlist[17][2] and hand_lmlist[4][2] < hand_lmlist[8][2]:
+                            if right_hand_fingersUp_list_a1 == [1, 1, 0, 0, 0]:
+                                dcnt += 1
+                                action = ''
+                                if max_detec > dcnt > min_detec:
+                                    action = 16
+                                elif dcnt > max_detec+10:
+                                    action = ''
+                                    cnt10 = 0
+                                    dcnt = 0
+                                    
+                        if action in num_lst:
+                            flag = True
 
-                if action != '':
-                    if flag:
-                        text_cnt += 1
-                        if text_cnt % max_detec == 0:
-                            cnt10 = 0
-                            text_cnt = 0
-                            dcnt = 0
-                            flag = False
+                    if action != '':
+                        if flag:
+                            text_cnt += 1
+                            if text_cnt % max_detec == 0:
+                                cnt10 = 0
+                                text_cnt = 0
+                                dcnt = 0
+                                flag = False
 
-            action = str(action)
+                action = str(action)
 
-            action_seq.append(action)
+                action_seq.append(action)
 
-            if len(action_seq) < 3:
-                continue
+                if len(action_seq) < 3:
+                    continue
 
-            this_action = ' '
-            if action_seq[-1] == action_seq[-2] == action_seq[-3]:
-                this_action = action
+                this_action = ' '
+                if action_seq[-1] == action_seq[-2] == action_seq[-3]:
+                    this_action = action
 
-                if last_action != this_action:
-                    last_action = this_action
+                    if last_action != this_action:
+                        last_action = this_action
 
-            # wrist moving check
-            status, img = check_moving(result, img, point_history, point_history_classifier, finger_gesture_history, point_history_classifier_labels, draw=False)
+                # wrist moving check
+                status, img = check_moving(result, img, point_history, point_history_classifier, finger_gesture_history, point_history_classifier_labels, draw=False)
 
-        else:
-            jamo_li = []
-            jamo_join_li.append(' ')
-            if jamo_join_li:
-                if len(jamo_join_li) >= 2 and jamo_join_li[-1] == ' ':
-                        jamo_join_li.remove(" ")
+            else:
+                jamo_li = []
+                jamo_join_li.append(' ')
+                if jamo_join_li:
+                    if len(jamo_join_li) >= 2 and jamo_join_li[-1] == ' ':
+                            jamo_join_li.remove(" ")
 
         img = cv2.flip(img, 1)
 
@@ -520,6 +537,9 @@ def main(mode, mode_count, button_overlay):
         , (550,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
 
         img[125:200, 540:615] = button_overlay
+        img[300:375, 540:615] = delete_button_overlay
+
+        cv2.rectangle(img, (100, 100), (540, 400), (255, 255, 255), 1)
 
         cv2.imshow('img', img)
 
@@ -687,6 +707,10 @@ def wrist_angle_calculator(hand_lmlist):
 mode = True
 mode_count = 0
 button_overlay = overlayList[0]
+delete_count = 0
+delete_button_overlay = overlayList[4]
+
+s2_lst_remove = ''
 
 if __name__ == '__main__':
-    main(mode, mode_count, button_overlay)
+    main(mode, mode_count, button_overlay, delete_count, delete_button_overlay, s2_lst_remove)
