@@ -98,6 +98,7 @@ def main(mode, mode_count, button_overlay, delete_count, delete_button_overlay, 
     cnt = 0
     jamo_li = deque()
     jamo_join_li = deque()
+    jamo_join_li.append(' ')
 
     status_cnt_conf = 10
     status_lst = deque(['Stop']*status_cnt_conf, maxlen=status_cnt_conf)
@@ -141,6 +142,8 @@ def main(mode, mode_count, button_overlay, delete_count, delete_button_overlay, 
     while cap.isOpened():
         action = ''
         ret, img = cap.read()
+
+        h, w, c = img.shape
         
         if this_action not in ['', ' ']:
             cnt += 1
@@ -226,8 +229,6 @@ def main(mode, mode_count, button_overlay, delete_count, delete_button_overlay, 
             x1, y1 = hand_lmlist[8][1:3]
             wrist_x, wrist_y = hand_lmlist[0][1:3]
             thumb_index_angle = int(detector.findHandAngle(img, 4, 2, 5, draw=False))
-            print(thumb_index_angle)
-
             # change mode button
             if mode == True:
                 if 25 < x1 < 100 and 125 < y1 < 200:
@@ -294,6 +295,13 @@ def main(mode, mode_count, button_overlay, delete_count, delete_button_overlay, 
 
                         action = actions_m1[i_pred]
 
+                        if action == 'ㅁ':
+                            if hand_lmlist[8][2] < hand_lmlist[7][2]:
+                                action = 'ㅑ'
+                        elif action == 'ㅑ':
+                            if hand_lmlist[8][2] > hand_lmlist[7][2]:
+                                action = 'ㅁ'
+
                     elif hand_lmlist[5][1] < hand_lmlist[17][1] and hand_lmlist[5][2] < hand_lmlist[0][2] and hand_lmlist[17][2] < hand_lmlist[0][2]:
                         # print("model m2")
                         select_model = "m2"
@@ -320,7 +328,7 @@ def main(mode, mode_count, button_overlay, delete_count, delete_button_overlay, 
                             if 35 < thumb_index_angle < 90:
                                 action = 'ㄱ'
 
-                    elif hand_lmlist[5][1] > hand_lmlist[0][1] and hand_lmlist[5][2] < hand_lmlist[17][2] and (wrist_angle <= 300 or wrist_angle >= 350):
+                    elif hand_lmlist[5][1] > hand_lmlist[0][1] and hand_lmlist[5][2] < hand_lmlist[17][2] and (wrist_angle <= 295 or wrist_angle >= 350):
                         # print("model m4")
                         select_model = "m4"
                         i_pred, conf = model_predict(input_data, interpreter_m4)
@@ -506,6 +514,8 @@ def main(mode, mode_count, button_overlay, delete_count, delete_button_overlay, 
                     if len(jamo_join_li) >= 2 and jamo_join_li[-1] == ' ':
                             jamo_join_li.remove(" ")
 
+            # cv2.circle(img, (x1, y1), 5, (255, 255, 255), -1)
+
         img = cv2.flip(img, 1)
 
         # 자음 모음 결합
@@ -548,8 +558,16 @@ def main(mode, mode_count, button_overlay, delete_count, delete_button_overlay, 
 
         img[125:200, 540:615] = button_overlay
         img[300:375, 540:615] = delete_button_overlay
+        img[70:100, 400:540] = overlayList[6]
 
         cv2.rectangle(img, (100, 100), (540, 400), (255, 255, 255), 1)
+
+        if result.multi_hand_landmarks is not None:
+            x1, y1 = hand_lmlist[8][1:3]
+            if 100 < x1 < 540 and 100 < y1 < 400:
+                cv2.circle(img, (w-x1, y1), 5, (255, 255, 255), -1)
+            else:
+                cv2.circle(img, (w-x1, y1), 5, (20, 20, 20), -1)
 
         cv2.imshow('img', img)
 
@@ -572,7 +590,7 @@ def calc_landmark_list(image, landmarks):
         ## 좌우이동만 인식하기 위해 y값 제거 ##
         ## 민감도 절감을 위한 x값 조정 ##
         # landmark_point.append([landmark_x, landmark_y])
-        landmark_point.append([landmark_x // 1.5, 0])
+        landmark_point.append([landmark_x // 2.5, 0])
 
     return landmark_point
 
