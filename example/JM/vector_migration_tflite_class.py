@@ -13,41 +13,80 @@ import modules.HandTrackingModule as htm
 # Hand 객체 생성
 detector = htm.handDetector(max_num_hands=1)
 
+
+# ------------------- 모델 ------------------- #
+
+# ## m1 방향에 따라 분류(손바닥 위)
+# # actions_m1 = ['a','ae','ya','yae','i']
+# actions_m1 = ['ㅁ','ㅂ','ㅍ','ㅇ','ㅏ','ㅐ','ㅑ','ㅒ','ㅣ']
+# # model_m1 = load_model('models/M/model_m1.h5')
+# interpreter_m1 = tf.lite.Interpreter(model_path="models/JM/jsy_jm_model3.tflite")
+# interpreter_m1.allocate_tensors()
+
+# ## m2 방향에 따라 분류(손등 위)
+# # actions_m2 = ['o','oe','yo']
+# actions_m2 = ['o','ㅗ','ㅚ','ㅛ']
+# # model_m2 = load_model('models/M/model_m2.h5')
+# interpreter_m2 = tf.lite.Interpreter(model_path="models/JM/jsy_jm_model4.tflite")
+# interpreter_m2.allocate_tensors()
+
+# ## m3 방향에 따라 분류(아래)
+# # actions_m3 = ['u','wi','yu']
+# actions_m3 = ['ㄱ','ㅈ','ㅊ','ㅋ','ㅅ','ㅜ','ㅟ','ㅠ']
+# # model_m3 = load_model('models/M/model_m3.h5')
+# interpreter_m3 = tf.lite.Interpreter(model_path="models/JM/jsy_jm_model1.tflite")
+# interpreter_m3.allocate_tensors()
+
+# ## m4 방향에 따라 분류 (앞)
+# # actions_m4 = ['eo','e','yeo','ye']
+# actions_m4 = ['ㅎ','ㅓ','ㅔ','ㅕ','ㅖ']
+# # model_m4 = load_model('models/M/model_m4.h5')
+# interpreter_m4 = tf.lite.Interpreter(model_path="models/JM/jsy_jm_model5.tflite")
+# interpreter_m4.allocate_tensors()
+
+# ## m5 방향에 따라 분류 (옆)
+# # actions_m5 = ['eu', 'ui']  
+# actions_m5 = ['ㄴ','ㄷ','ㄹ','ㅌ','ㅡ','ㅢ']  
+# # model_m5 = load_model('models/M/model_m5.h5')
+# interpreter_m5 = tf.lite.Interpreter(model_path="models/JM/jsy_jm_model2.tflite")
+# interpreter_m5.allocate_tensors()
 ## m1 방향에 따라 분류(손바닥 위)
 # actions_m1 = ['a','ae','ya','yae','i']
-actions_m1 = ['ㅁ','ㅂ','ㅍ','ㅇ','ㅏ','ㅐ','ㅑ','ㅒ','ㅣ']
+actions_m1 = ['ㅁ','ㅂ','ㅍ','ㅇ','ㅇ','ㅎ','ㅏ','ㅐ','ㅑ','ㅒ','ㅣ']
 # model_m1 = load_model('models/M/model_m1.h5')
-interpreter_m1 = tf.lite.Interpreter(model_path="models/JM/vector_norm/model3.tflite")
+interpreter_m1 = tf.lite.Interpreter(model_path="models/modelscale/model111.tflite")
 interpreter_m1.allocate_tensors()
 
 ## m2 방향에 따라 분류(손등 위)
 # actions_m2 = ['o','oe','yo']
-actions_m2 = ['o','ㅗ','ㅚ','ㅛ']
+actions_m2 = ['ㅇ','ㅎ','ㅗ','ㅚ','ㅛ']
 # model_m2 = load_model('models/M/model_m2.h5')
-interpreter_m2 = tf.lite.Interpreter(model_path="models/JM/vector_norm/model4.tflite")
+interpreter_m2 = tf.lite.Interpreter(model_path="models/modelscale/model22.tflite")
 interpreter_m2.allocate_tensors()
 
 ## m3 방향에 따라 분류(아래)
 # actions_m3 = ['u','wi','yu']
-actions_m3 = ['ㄱ','ㅈ','ㅊ','ㅋ','ㅅ','ㅜ','ㅟ','ㅠ']
+# actions_m3 = ['ㄱ','ㅈ','ㅊ','ㅋ','ㅅ','ㅜ','ㅟ','ㅠ']
+actions_m3 = ['ㄱ','ㅈ','ㅊ','ㅋ','ㅅ','ㅜ','ㅟ']
 # model_m3 = load_model('models/M/model_m3.h5')
-interpreter_m3 = tf.lite.Interpreter(model_path="models/JM/vector_norm/model1.tflite")
+interpreter_m3 = tf.lite.Interpreter(model_path="models/modelscale/model3.tflite")
 interpreter_m3.allocate_tensors()
 
 ## m4 방향에 따라 분류 (앞)
 # actions_m4 = ['eo','e','yeo','ye']
 actions_m4 = ['ㅎ','ㅓ','ㅔ','ㅕ','ㅖ']
+# actions_m4 = ['ㅎ']
 # model_m4 = load_model('models/M/model_m4.h5')
-interpreter_m4 = tf.lite.Interpreter(model_path="models/JM/vector_norm/model5.tflite")
+interpreter_m4 = tf.lite.Interpreter(model_path="models/modelscale/model4.tflite")
 interpreter_m4.allocate_tensors()
 
 ## m5 방향에 따라 분류 (옆)
 # actions_m5 = ['eu', 'ui']  
-actions_m5 = ['ㄴ','ㄷ','ㄹ','ㅌ','ㅡ','ㅢ']  
+# actions_m5 = ['ㄴ','ㄷ','ㄹ','ㅌ','ㅡ','ㅢ']  
+actions_m5 = ['ㄴ','ㄷ','ㄹ','ㅡ','ㅢ']  
 # model_m5 = load_model('models/M/model_m5.h5')
-interpreter_m5 = tf.lite.Interpreter(model_path="models/JM/vector_norm/model2.tflite")
+interpreter_m5 = tf.lite.Interpreter(model_path="models/modelscale/model5.tflite")
 interpreter_m5.allocate_tensors()
-
 # Get input and output tensors.
 input_details = interpreter_m1.get_input_details()
 output_details = interpreter_m1.get_output_details()
@@ -55,55 +94,77 @@ output_details = interpreter_m1.get_output_details()
 
 # -------------------------------------------------- #
 
-seq_length = 30
+seq_length = 10
 
-
-# MediaPipe hands model
-mp_hands = mp.solutions.hands
-mp_drawing = mp.solutions.drawing_utils
-hands = mp_hands.Hands(
-    max_num_hands=1,
-    min_detection_confidence=0.5,
-    min_tracking_confidence=0.5)
-
-cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+# cap = cv2.VideoCapture('C:\\Users\\dropl\\OneDrive\\바탕 화면\\accvideo\\한글 지문자 모음.mp4')
+cap = cv2.VideoCapture(0)
 
 seq = []
 action_seq = []
 last_action = None
 this_action = ''
 select_model = ''
+action = ''
 
 wrist_angle = 0
 confidence = 0.9
-action = ' '
 
 while cap.isOpened():
     ret, img = cap.read()
     if not ret:
         break
+    # img = cv2.flip(img, 1)
 
     h, w, c = img.shape
 
-    # img = cv2.flip(img, 1)
-    
-    img, result = detector.findHandswithResult(img, draw=False)
+    img, result = detector.findHandswithResult(img, draw=True)
 
     hand_lmlist, _ = detector.findPosition(img, draw=False)
 
     if result.multi_hand_landmarks is not None:
+
+        thumb_index_angle = int(detector.findHandAngle(img, 4, 2, 5, draw=False))
+
         for res in result.multi_hand_landmarks:
             joint = np.zeros((21, 2))
-
-            thumb_index_angle = int(detector.findHandAngle(img, 4, 2, 5, draw=False))
-
+            x_right_label = []
+            y_right_label = []
+            for j, lm in enumerate(res.landmark):
+                joint[j] = [lm.x, lm.y] # z축 제거, visibility 제거
+            
+            
             radian = math.atan2(hand_lmlist[17][2]-hand_lmlist[0][2],hand_lmlist[17][1]-hand_lmlist[0][1])-math.atan2(hand_lmlist[5][2]-hand_lmlist[0][2],hand_lmlist[5][1]-hand_lmlist[0][1])
             wrist_angle = 360 - int(math.degrees(radian))
+            radian_2 = math.atan2(hand_lmlist[9][2]-hand_lmlist[12][2],hand_lmlist[9][1]-hand_lmlist[12][1])
+            wrist_angle_2 = int(math.degrees(radian_2))
+            radian_3 = math.atan2(hand_lmlist[13][2]-hand_lmlist[16][2],hand_lmlist[13][1]-hand_lmlist[16][1])
+            wrist_angle_3 = int(math.degrees(radian_3))
 
             if wrist_angle < 0:
                 wrist_angle += 360
+            if wrist_angle_2 < 0:
+                    wrist_angle_2 += 360
+            if wrist_angle_3 < 0:
+                wrist_angle_3 += 360
 
-            print("wrist_angle : ", wrist_angle)
+            similar_text_res = wrist_angle_3 - wrist_angle_2
+            
+            # print("wrist_angle : ",wrist_angle)
+            for i in range(21):
+                x_right_label.append(joint[i][0] - joint[0][0])
+                y_right_label.append(joint[i][1] - joint[0][1])
+
+            if max(x_right_label) == min(x_right_label):
+                x_right_scale = x_right_label
+            else:
+                x_right_scale = x_right_label/(max(x_right_label)-min(x_right_label))
+                
+            if max(y_right_label) == min(y_right_label):
+                y_right_scale = y_right_label
+            else:
+                y_right_scale = y_right_label/(max(y_right_label)-min(y_right_label))
+            full_scale = np.concatenate([x_right_scale.flatten(), y_right_scale.flatten()])
+
             # Compute angles between joints
             v1 = joint[[0,1,2,3,0,5,6,7,0,9,10,11,0,13,14,15,0,17,18,19], :3] # Parent joint
             v2 = joint[[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20], :3] # Child joint
@@ -118,11 +179,9 @@ while cap.isOpened():
 
             angle = np.degrees(angle) # Convert radian to degree
 
-            d = np.concatenate([v.flatten(), angle])
+            d = np.concatenate([full_scale, angle])
 
             seq.append(d)
-
-            mp_drawing.draw_landmarks(img, res, mp_hands.HAND_CONNECTIONS)
 
             if len(seq) < seq_length:
                 continue
@@ -138,6 +197,7 @@ while cap.isOpened():
                 y_pred = interpreter_m1.get_tensor(output_details[0]['index'])
                 i_pred = int(np.argmax(y_pred[0]))
                 conf = y_pred[0][i_pred]
+                
                 if conf < confidence:
                     continue
 
@@ -169,15 +229,15 @@ while cap.isOpened():
 
                 if conf < confidence:
                     continue
-
                 action = actions_m3[i_pred]
-
                 if action == 'ㄱ':
                     if thumb_index_angle > 250:
                         action = 'ㅜ'
                 elif action == 'ㅜ':
                     if 35 < thumb_index_angle < 90:
                         action = 'ㄱ'
+
+                action = actions_m3[i_pred]
 
             elif hand_lmlist[5][1] > hand_lmlist[0][1] and hand_lmlist[5][2] < hand_lmlist[17][2] and (wrist_angle <= 300 or wrist_angle >= 350):
                 # print("model m4")
@@ -206,8 +266,14 @@ while cap.isOpened():
                     continue
 
                 action = actions_m5[i_pred]
+
+                if action == 'ㄹ':
+                    if similar_text_res < 0:
+                        action = 'ㅌ'
+                    elif 0 < similar_text_res < 20:
+                        action = 'ㄹ'
             
-            
+            # print(conf)
 
             action_seq.append(action)
 
