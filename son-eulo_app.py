@@ -22,31 +22,60 @@ from hangul_utils import split_syllable_char, split_syllables, join_jamos
 # Hand 객체 생성
 detector = htm.handDetector(max_num_hands=1)
 
-# ------------------- 모델 ------------------- #
+
+# ------------------- vector normalization model ------------------- #
+
+# ## m1 방향에 따라 분류(손바닥 위)
+# actions_m1 = ['ㅁ','ㅂ','ㅍ','ㅇ','ㅇ','ㅎ','ㅏ','ㅐ','ㅑ','ㅒ','ㅣ']
+# interpreter_m1 = tf.lite.Interpreter(model_path="models/JM/vector_norm/model1.tflite")
+# interpreter_m1.allocate_tensors()
+
+# ## m2 방향에 따라 분류(손등 위)
+# actions_m2 = ['ㅇ','ㅎ','ㅗ','ㅚ','ㅛ']
+# interpreter_m2 = tf.lite.Interpreter(model_path="models/JM/vector_norm/model2.tflite")
+# interpreter_m2.allocate_tensors()
+
+# ## m3 방향에 따라 분류(아래)
+# actions_m3 = ['ㄱ','ㅈ','ㅊ','ㅋ','ㅅ','ㅜ','ㅟ']
+# interpreter_m3 = tf.lite.Interpreter(model_path="models/JM/vector_norm/model3.tflite")
+# interpreter_m3.allocate_tensors()
+
+# ## m4 방향에 따라 분류 (앞)
+# actions_m4 = ['ㅎ','ㅓ','ㅔ','ㅕ','ㅖ']
+# interpreter_m4 = tf.lite.Interpreter(model_path="models/JM/vector_norm/model4.tflite")
+# interpreter_m4.allocate_tensors()
+
+# ## m5 방향에 따라 분류 (옆)
+# actions_m5 = ['ㄴ','ㄷ','ㄹ','ㅡ','ㅢ']
+# interpreter_m5 = tf.lite.Interpreter(model_path="models/JM/vector_norm/model5.tflite")
+# interpreter_m5.allocate_tensors()
+
+
+#------------------- scale normalization model ------------------- #
 
 ## m1 방향에 따라 분류(손바닥 위)
 actions_m1 = ['ㅁ','ㅂ','ㅍ','ㅇ','ㅇ','ㅎ','ㅏ','ㅐ','ㅑ','ㅒ','ㅣ']
-interpreter_m1 = tf.lite.Interpreter(model_path="models/modelvector/model1.tflite")
+interpreter_m1 = tf.lite.Interpreter(model_path="models/JM/scale_norm/model1.tflite")
 interpreter_m1.allocate_tensors()
 
 ## m2 방향에 따라 분류(손등 위)
 actions_m2 = ['ㅇ','ㅎ','ㅗ','ㅚ','ㅛ']
-interpreter_m2 = tf.lite.Interpreter(model_path="models/modelvector/model2.tflite")
+interpreter_m2 = tf.lite.Interpreter(model_path="models/JM/scale_norm/model2.tflite")
 interpreter_m2.allocate_tensors()
 
 ## m3 방향에 따라 분류(아래)
 actions_m3 = ['ㄱ','ㅈ','ㅊ','ㅋ','ㅅ','ㅜ','ㅟ']
-interpreter_m3 = tf.lite.Interpreter(model_path="models/modelvector/model3.tflite")
+interpreter_m3 = tf.lite.Interpreter(model_path="models/JM/scale_norm/model3.tflite")
 interpreter_m3.allocate_tensors()
 
 ## m4 방향에 따라 분류 (앞)
 actions_m4 = ['ㅎ','ㅓ','ㅔ','ㅕ','ㅖ']
-interpreter_m4 = tf.lite.Interpreter(model_path="models/modelvector/model4.tflite")
+interpreter_m4 = tf.lite.Interpreter(model_path="models/JM/scale_norm/model4.tflite")
 interpreter_m4.allocate_tensors()
 
 ## m5 방향에 따라 분류 (옆)
 actions_m5 = ['ㄴ','ㄷ','ㄹ','ㅡ','ㅢ']
-interpreter_m5 = tf.lite.Interpreter(model_path="models/modelvector/model5.tflite")
+interpreter_m5 = tf.lite.Interpreter(model_path="models/JM/scale_norm/model5.tflite")
 interpreter_m5.allocate_tensors()
 
 # Get input and output tensors.
@@ -276,8 +305,12 @@ def main(mode, mode_count, button_overlay, delete_count, delete_button_overlay, 
                 if mode == True:
                     wrist_angle, similar_text_res = wrist_angle_calculator(hand_lmlist)
 
-                    d = vector_normalization(result)
+                    # vector noramlization #
+                    # d = vector_normalization(result)
 
+                    # scale normalization #
+                    d  = scale_normalization(result)
+                    
                     seq.append(d)
 
                     if len(seq) < seq_length:
@@ -713,6 +746,47 @@ def vector_normalization(result):
 
         return d
 
+def scale_normalization(result):
+    for res in result.multi_hand_landmarks:
+        joint = np.zeros((21, 2))
+        x_right_label = []
+        y_right_label = []
+        for j, lm in enumerate(res.landmark):
+            joint[j] = [lm.x, lm.y]
+    
+        for i in range(21):
+                x_right_label.append(joint[i][0] - joint[0][0])
+                y_right_label.append(joint[i][1] - joint[0][1])
+                
+        if max(x_right_label) == min(x_right_label):
+            x_right_scale = x_right_label
+        else:
+            x_right_scale = x_right_label/(max(x_right_label)-min(x_right_label))
+                
+        if max(y_right_label) == min(y_right_label):
+            y_right_scale = y_right_label
+        else:
+            y_right_scale = y_right_label/(max(y_right_label)-min(y_right_label))
+        full_scale = np.concatenate([x_right_scale.flatten(), y_right_scale.flatten()])
+
+        # Compute angles between joints
+        v1 = joint[[0,1,2,3,0,5,6,7,0,9,10,11,0,13,14,15,0,17,18,19], :3] # Parent joint
+        v2 = joint[[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20], :3] # Child joint
+        v = v2 - v1 # [20, 3]
+        # Normalize v
+        v = v / np.linalg.norm(v, axis=1)[:, np.newaxis]
+
+        # Get angle using arcos of dot product
+        angle = np.arccos(np.einsum('nt,nt->n',
+            v[[0,1,2,4,5,6,8,9,10,12,13,14,16,17,18],:], 
+            v[[1,2,3,5,6,7,9,10,11,13,14,15,17,18,19],:])) # [15,]
+
+        angle = np.degrees(angle) # Convert radian to degree
+
+        d = np.concatenate([full_scale, angle])
+        
+        return d
+    
 def wrist_angle_calculator(hand_lmlist):
     radian = math.atan2(hand_lmlist[17][2]-hand_lmlist[0][2],hand_lmlist[17][1]-hand_lmlist[0][1])-math.atan2(hand_lmlist[5][2]-hand_lmlist[0][2],hand_lmlist[5][1]-hand_lmlist[0][1])
     wrist_angle = 360 - int(math.degrees(radian))

@@ -9,13 +9,13 @@ import tensorflow as tf
 
 # ------------------- 모델 ------------------- #
 
-actions = ['ㄱ','ㅅ','ㅈ','ㅋ','ㅊ']
+actions = ['ㅁ','ㅂ','ㅍ','ㅇ','ㅇ','ㅎ','ㅏ','ㅐ','ㅑ','ㅒ','ㅣ']
 
 ## j1
 # actions = ['ㄱ', 'ㄴ', 'ㄷ', 'ㄹ', ' ']
 # actions = ["giyeok", "shiot", "jieut", "ch'ieuch'", "k'ieuk'"] 
 # model = load_model('models/J/jdu_j_model.h5')
-interpreter_j1 = tf.lite.Interpreter(model_path="models/J/jdu_j_scale_norm_model.tflite")
+interpreter_j1 = tf.lite.Interpreter(model_path="models/JM/vector_norm/model1.tflite")
 interpreter_j1.allocate_tensors()
 
 ## j2
@@ -36,8 +36,9 @@ interpreter_j1.allocate_tensors()
 input_details = interpreter_j1.get_input_details()
 output_details = interpreter_j1.get_output_details()
 
-seq_length = 30
+seq_length = 10
 this_action = ''
+confidence = 0.9
 
 # MediaPipe hands model
 mp_hands = mp.solutions.hands
@@ -97,7 +98,9 @@ while cap.isOpened():
             interpreter_j1.invoke()
             y_pred = interpreter_j1.get_tensor(output_details[0]['index'])
             i_pred = int(np.argmax(y_pred[0]))
-
+            conf = y_pred[0][i_pred]
+            if conf < confidence:
+                continue
             action = actions[i_pred]
             action_seq.append(action)
 

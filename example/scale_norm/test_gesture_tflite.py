@@ -8,12 +8,12 @@ import tensorflow as tf
 
 # ------------------- 모델 ------------------- #
 
-actions = ['ㄱ','ㅅ','ㅈ','ㅊ','ㅋ']
+actions = ['ㅁ','ㅂ','ㅍ','ㅇ','ㅇ','ㅎ','ㅏ','ㅐ','ㅑ','ㅒ','ㅣ']
 
 ## j1
 # actions = ['ㄱ', 'ㄴ', 'ㄷ', 'ㄹ', ' ']
 # actions = ["giyeok", "shiot", "jieut", "ch'ieuch'", "k'ieuk'"] 
-interpreter_j1 = tf.lite.Interpreter(model_path="models/J/jdu_j_scale_norm_model.tflite")
+interpreter_j1 = tf.lite.Interpreter(model_path="models/JM/scale_norm/model1.tflite")
 interpreter_j1.allocate_tensors()
 ## j2
 # actions = ["nieun", "digeut", "rieul", "t'ieut'"]
@@ -33,8 +33,8 @@ interpreter_j1.allocate_tensors()
 input_details = interpreter_j1.get_input_details()
 output_details = interpreter_j1.get_output_details()
 
-seq_length = 30
-
+seq_length = 10
+confidence = 0.9
 
 # MediaPipe hands model
 mp_hands = mp.solutions.hands
@@ -62,11 +62,11 @@ while cap.isOpened():
 
     if result.multi_hand_landmarks is not None:
         for res in result.multi_hand_landmarks:
-            joint = np.zeros((21, 2))
+            joint = np.zeros((21, 4))
             x_right_label = []
             y_right_label = []
             for j, lm in enumerate(res.landmark):
-                joint[j] = [lm.x, lm.y] # z축 제거, visibility 제거
+                joint[j] = [lm.x, lm.y, lm.z, lm.visibility]
                 
             for i in range(21):
                 x_right_label.append(joint[i][0] - joint[0][0])
@@ -114,6 +114,10 @@ while cap.isOpened():
             i_pred = int(np.argmax(y_pred[0]))         
 
             action = actions[i_pred]
+            conf = y_pred[0][i_pred]
+                
+            if conf < confidence:
+                continue
             action_seq.append(action)
 
             if len(action_seq) < 3:
