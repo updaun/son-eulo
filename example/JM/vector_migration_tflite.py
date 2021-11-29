@@ -15,37 +15,37 @@ detector = htm.handDetector(max_num_hands=1)
 
 ## m1 방향에 따라 분류(손바닥 위)
 # actions_m1 = ['a','ae','ya','yae','i']
-actions_m1 = ['ㅁ','ㅂ','ㅍ','ㅇ','ㅏ','ㅐ','ㅑ','ㅒ','ㅣ']
+actions_m1 = ['ㅁ','ㅂ','ㅍ','ㅇ','ㅇ','ㅎ','ㅏ','ㅐ','ㅑ','ㅒ','ㅣ']
 # model_m1 = load_model('models/M/model_m1.h5')
-interpreter_m1 = tf.lite.Interpreter(model_path="models/JM/vector_norm/model3.tflite")
+interpreter_m1 = tf.lite.Interpreter(model_path="models\modelvector\model1.tflite")
 interpreter_m1.allocate_tensors()
 
 ## m2 방향에 따라 분류(손등 위)
 # actions_m2 = ['o','oe','yo']
-actions_m2 = ['o','ㅗ','ㅚ','ㅛ']
+actions_m2 = ['ㅇ','ㅎ','ㅗ','ㅚ','ㅛ']
 # model_m2 = load_model('models/M/model_m2.h5')
-interpreter_m2 = tf.lite.Interpreter(model_path="models/JM/vector_norm/model4.tflite")
+interpreter_m2 = tf.lite.Interpreter(model_path="models\modelvector\model2.tflite")
 interpreter_m2.allocate_tensors()
 
 ## m3 방향에 따라 분류(아래)
 # actions_m3 = ['u','wi','yu']
-actions_m3 = ['ㄱ','ㅈ','ㅊ','ㅋ','ㅅ','ㅜ','ㅟ','ㅠ']
+actions_m3 = ['ㄱ','ㅈ','ㅊ','ㅋ','ㅅ','ㅜ','ㅟ']
 # model_m3 = load_model('models/M/model_m3.h5')
-interpreter_m3 = tf.lite.Interpreter(model_path="models/JM/vector_norm/model1.tflite")
+interpreter_m3 = tf.lite.Interpreter(model_path="models\modelvector\model3.tflite")
 interpreter_m3.allocate_tensors()
 
 ## m4 방향에 따라 분류 (앞)
 # actions_m4 = ['eo','e','yeo','ye']
 actions_m4 = ['ㅎ','ㅓ','ㅔ','ㅕ','ㅖ']
 # model_m4 = load_model('models/M/model_m4.h5')
-interpreter_m4 = tf.lite.Interpreter(model_path="models/JM/vector_norm/model5.tflite")
+interpreter_m4 = tf.lite.Interpreter(model_path="models\modelvector\model4.tflite")
 interpreter_m4.allocate_tensors()
 
 ## m5 방향에 따라 분류 (옆)
 # actions_m5 = ['eu', 'ui']  
-actions_m5 = ['ㄴ','ㄷ','ㄹ','ㅌ','ㅡ','ㅢ']  
+actions_m5 = ['ㄴ','ㄷ','ㄹ','ㅡ','ㅢ']  
 # model_m5 = load_model('models/M/model_m5.h5')
-interpreter_m5 = tf.lite.Interpreter(model_path="models/JM/vector_norm/model2.tflite")
+interpreter_m5 = tf.lite.Interpreter(model_path="models\modelvector\model5.tflite")
 interpreter_m5.allocate_tensors()
 
 # Get input and output tensors.
@@ -55,7 +55,7 @@ output_details = interpreter_m1.get_output_details()
 
 # -------------------------------------------------- #
 
-seq_length = 30
+seq_length = 10
 
 
 # MediaPipe hands model
@@ -66,7 +66,7 @@ hands = mp_hands.Hands(
     min_detection_confidence=0.5,
     min_tracking_confidence=0.5)
 
-cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+cap = cv2.VideoCapture('C:\\Users\\dropl\\OneDrive\\바탕 화면\\accvideo\\da.mp4')
 
 seq = []
 action_seq = []
@@ -253,4 +253,3 @@ while cap.isOpened():
     # ESC 키를 눌렀을 때 창을 모두 종료하는 부분
     if cv2.waitKey(1) & 0xFF == 27:
         break 
-

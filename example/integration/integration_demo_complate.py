@@ -566,8 +566,10 @@ def main(mode, mode_count, button_overlay, delete_count, delete_button_overlay, 
             x1, y1 = hand_lmlist[8][1:3]
             if 100 < x1 < 540 and 100 < y1 < 400:
                 cv2.circle(img, (w-x1, y1), 5, (255, 255, 255), -1)
+                cv2.circle(img, (w-x1, y1), 8, (255, 255, 255), 1)
             else:
                 cv2.circle(img, (w-x1, y1), 5, (20, 20, 20), -1)
+                cv2.circle(img, (w-x1, y1), 8, (20, 20, 20), 1)
 
         cv2.imshow('img', img)
 
