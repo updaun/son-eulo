@@ -75,6 +75,7 @@ def main():
                 # logging_csv(number, mode, pre_processed_landmark_list,
                 #             pre_processed_point_history_list)
 
+                # 손목 좌표로 지정
                 point_history.append(landmark_list[0])
 
                 finger_gesture_id = 0

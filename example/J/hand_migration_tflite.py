@@ -3,11 +3,7 @@ import mediapipe as mp
 import numpy as np
 from tensorflow.keras.models import load_model
 import tensorflow as tf
-from pynput.keyboard import Key, Controller
 from PIL import ImageFont, ImageDraw, Image
-
-kbControl = Controller()
-
 
 # ------------------- 모델 ------------------- #
 

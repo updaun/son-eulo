@@ -39,11 +39,13 @@ while True:
         # 엄지 끝과 검지 끝의 거리 측정
         thumb_index_length = detector.findLength(4, 8)
 
+        # 검지 구부림 감지를 위한 각도 변수
         index_finger_angle_1 = int(detector.findHandAngle(img, 8, 9, 5, draw=False))
         index_finger_angle_2 = int(detector.findHandAngle(img, 8, 13, 5, draw=False))
         index_finger_angle_3 = int(detector.findHandAngle(img, 8, 17, 5, draw=False))
         total_index_angle = index_finger_angle_1 + index_finger_angle_2 + index_finger_angle_3
         
+        # 중지 구부림 감지를 위한 각도 변수
         middle_finger_angle_1 = 360 - int(detector.findHandAngle(img, 12, 5, 9, draw=False))
         middle_finger_angle_2 = int(detector.findHandAngle(img, 12, 13, 9, draw=False))
         middle_finger_angle_3 = int(detector.findHandAngle(img, 12, 17, 9, draw=False))
@@ -106,13 +108,14 @@ while True:
                 elif right_hand_fingersUp_list_a1[2:] == [1, 1, 1] and hand_lmList[8][1] <= hand_lmList[6][1] + 20:
                     number = 19    
 
+        # 10이 계속 인식된 경우 10으로 표현
         if cnt10 > (max_detec - min_detec):
             number = 10
             flag = True
             # print("clear")
             # dcnt = 0
             
-            
+        # 10이 인식되었다가 1, 5, 6이 인식되는 경우    
         elif cnt10 > min_detec:
             if hand_lmList[5][1] > hand_lmList[17][1] and hand_lmList[4][2] > hand_lmList[8][2]:
                 if right_hand_fingersUp_list_a0 == [0, 1, 0, 0, 0] and hand_lmList[8][2] < hand_lmList[7][2]:
@@ -168,7 +171,7 @@ while True:
             dcnt = 0
             flag = False
     
-    # 감지 안되었을 때
+    # 손이 감지 안되었을 때
     if len(hand_lmList) == 0:
         cnt10 = 0
         text_cnt = 0

@@ -85,6 +85,7 @@ while cap.isOpened():
 
             angle = np.degrees(angle) # Convert radian to degree
 
+            # 정규화 되지 않은 데이터 학습
             d = np.concatenate([joint.flatten(), angle])
 
             seq.append(d)
