@@ -185,7 +185,7 @@ def main(mode, mode_count, button_overlay, delete_count, delete_button_overlay, 
     jamo_join_li = deque()
     jamo_join_li.append(' ')
 
-    status_cnt_conf = 5
+    status_cnt_conf = 12
     status_lst = deque(['Stop']*5, maxlen=5)
 
     M = ['ㅏ', 'ㅐ', 'ㅑ', 'ㅒ', 'ㅣ', 'ㅗ', 'ㅚ', 'ㅛ', 'ㅜ', 'ㅟ', 'ㅠ', 'ㅓ', 'ㅔ', 'ㅕ', 'ㅖ', 'ㅡ', 'ㅢ', 'ㅘ', 'ㅙ', 'ㅝ', 'ㅞ']
@@ -199,6 +199,7 @@ def main(mode, mode_count, button_overlay, delete_count, delete_button_overlay, 
         }
     siot = ['ㅅ', 'ㅆ']
     MM_lst_2 = ['ㅏ', 'ㅐ', 'ㅓ', 'ㅔ']
+    yu_dict = {'규':'ㄱ', '뀨':'ㄲ', '뉴':'ㄴ', '듀':'ㄷ', '뜌':'ㄸ', '류':'ㄹ', '뮤':'ㅁ', '뷰':'ㅂ', '쀼':'ㅃ', '슈':'ㅅ', '쓔':'ㅆ', '유':'ㅇ', '쥬':'ㅈ', '쮸':'ㅉ', '츄':'ㅊ', '큐':'ㅋ', '튜':'ㅌ', '퓨':'ㅍ', '휴':'ㅎ'}
     JM_dict = {
         "고":"과","꼬":"꽈","노":"놔","도":"돠","또":"똬","로":"롸","모":"뫄","보":"봐","뽀":"뽜","소":"솨","쏘":"쏴","오":"와","조":"좌","쪼":"쫘","초":"촤","코":"콰","토":"톼","포":"퐈","호":"화",
         "개":"괘","깨":"꽤","내":"놰","대":"돼","때":"뙈","래":"뢔","매":"뫠","배":"봬","빼":"뽸","새":"쇄","쌔":"쐐","애":"왜","재":"좨","째":"쫴","채":"쵀","캐":"쾌","태":"퇘","페":"퐤","해":"홰",
@@ -234,8 +235,8 @@ def main(mode, mode_count, button_overlay, delete_count, delete_button_overlay, 
 
 
 
-    cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
-    # cap = cv2.VideoCapture("dataset/test_video/한글 지문자 모음.mp4")
+    # cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+    cap = cv2.VideoCapture("dataset/test_video/한글 지문자 모음.mp4")
         
 
 
@@ -249,6 +250,8 @@ def main(mode, mode_count, button_overlay, delete_count, delete_button_overlay, 
         ret, img = cap.read()
         if not ret:
             break
+
+        img = cv2.resize(img, (640, 480))
 
         if this_action not in ['', ' ']:
             cnt += 1
@@ -266,6 +269,7 @@ def main(mode, mode_count, button_overlay, delete_count, delete_button_overlay, 
                 jamo_dict = Counter(jamo_dict).most_common()
                 print("jamo_dict", jamo_dict)
                 if jamo_dict and jamo_dict[0][1]: # >= int(status_cnt_conf*0.7):
+                    print("tmp", tmp)
                     tmp = jamo_dict[0][0]
                     status_lst_slice = list(deque(itertools.islice(status_lst, int(status_cnt_conf*0.5), status_cnt_conf-1)))
                     # print("status_lst_slice", status_lst_slice)
@@ -295,7 +299,32 @@ def main(mode, mode_count, button_overlay, delete_count, delete_button_overlay, 
                             jamo_join_li.append(tmp)
                     elif tmp in M:
                         # 모음
-                        jamo_join_li.append(tmp)
+                        if len(jamo_join_li) != 0:
+                            if jamo_join_li[-1] == 'ㅠ':
+                                jamo_join_li[-1] = 'ㅅ'
+                                jamo_join_li.append(tmp)
+                            elif jamo_join_li[-1] in yu_dict.keys():
+                                jamo_join_li[-1] = yu_dict[jamo_join_li[-1]]
+                                jamo_join_li.append(tmp)
+                            elif len(jamo_join_li) > 1:
+                                if jamo_join_li[-1] == 'ㅠ':
+                                    jamo_join_li[-1] = 'ㅅ'
+                                    jamo_join_li.append(tmp)
+                                elif jamo_join_li[-2] == 'ㅠ' and jamo_join_li[-1] == ' ':
+                                    jamo_join_li[-2] = 'ㅅ'
+                                    jamo_join_li.append(tmp)
+                                elif jamo_join_li[-1] in yu_dict.keys():
+                                    jamo_join_li[-1] = yu_dict[jamo_join_li[-1]]
+                                    jamo_join_li.append(tmp)
+                                elif jamo_join_li[-2] in yu_dict.keys() and jamo_join_li[-1] == ' ':
+                                    jamo_join_li[-2] = yu_dict[jamo_join_li[-2]]
+                                    jamo_join_li.append(tmp)
+                                else:
+                                    jamo_join_li.append(tmp)
+                            else:
+                                jamo_join_li.append(tmp)
+                        else:
+                            jamo_join_li.append(tmp)
                     # 숫자
                     elif tmp.isdigit():
                         if len(jamo_join_li) >= 3 and jamo_join_li[-2].isdigit() and jamo_join_li[-1].isdigit():
@@ -319,7 +348,7 @@ def main(mode, mode_count, button_overlay, delete_count, delete_button_overlay, 
                                 jamo_join_li.append(i)
                 jamo_li = deque()
                 cnt = 0
-                
+            
 
         h, w, c = img.shape
 
@@ -456,6 +485,10 @@ def main(mode, mode_count, button_overlay, delete_count, delete_button_overlay, 
                             if action == 'ㅓ':
                                 if wrist_angle > 300:
                                     action = 'ㅡ'
+
+                            if action == 'ㅕ':
+                                if wrist_angle > 300:
+                                    action = 'ㄷ'
                         
 
                         action = str(action)
