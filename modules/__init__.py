@@ -1,0 +1,2 @@
+from modules.HandTrackingModule import handDetector
+from modules.HolisticModule import HolisticDetector

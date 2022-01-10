@@ -151,6 +151,34 @@ class handDetector():
             
         return angle
 
+    def findWholeHandAngle(self, img, p1, p2, draw=True):
+        # 랜드마크 좌표 얻기
+        # , x1, y1 = self.lmList[p1]
+        x1, y1 = self.lmList[p1][1:3]
+        x2, y2 = self.lmList[p2][1:3]
+
+        # 각도 계산
+        radian = math.atan2(y2-y1,x2-x1)
+        angle = math.degrees(radian)
+
+        if angle < 0:
+            angle += 360
+
+        #print(angle)
+        # 점, 선 그리기
+        if draw:
+            cv2.line(img, (x1,y1), (x2,y2), (255,255,255), 3)
+            cv2.line(img, (x2,y2), (x3,y3), (255,255,255), 3)            
+            cv2.circle(img, (x1,y1), 10, (0,0,255), cv2.FILLED)
+            cv2.circle(img, (x1,y1), 15, (0,0,255), 2)
+            cv2.circle(img, (x2,y2), 10, (0,0,255), cv2.FILLED)
+            cv2.circle(img, (x2,y2), 15, (0,0,255), 2)
+            cv2.circle(img, (x3,y3), 10, (0,0,255), cv2.FILLED)
+            cv2.circle(img, (x3,y3), 15, (0,0,255), 2)
+            cv2.putText(img, str(int(angle)), (x2-50,y2+50), cv2.FONT_HERSHEY_PLAIN, 2, (0,0,255), 2) 
+            
+        return angle
+
     def findDistance(self, p1, p2, img, draw=True, r=15, t=3):
         x1, y1 = self.lmList[p1][1:]
         x2, y2 = self.lmList[p2][1:]
