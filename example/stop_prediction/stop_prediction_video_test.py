@@ -411,10 +411,10 @@ def main(mode, mode_count, button_overlay, delete_count, delete_button_overlay, 
                         status, img = check_moving(result, img, point_history, point_history_classifier, finger_gesture_history, point_history_classifier_labels)
                         
                         stop_predict_status, img = stop_predict_check_moving(result, img, stop_predict_0_point_history, stop_predict_0_point_history_classifier, stop_predict_0_gesture_history, point_history_classifier_labels,
-                                                                             landmark_number= 0, sensitivity = 0.75)
+                                                    landmark_number= 0, sensitivity = 2)
                         motion_0_history.append(stop_predict_status)
                         stop_predict_status, img = stop_predict_check_moving(result, img, stop_predict_8_point_history, stop_predict_8_point_history_classifier, stop_predict_8_gesture_history, point_history_classifier_labels,
-                                                                             landmark_number= 8, sensitivity = 0.75)
+                                                    landmark_number= 8, sensitivity = 2)
                         motion_8_history.append(stop_predict_status)
                         
                         print(motion_0_history, motion_8_history)
@@ -889,6 +889,11 @@ def calc_landmark_list_xy(image, landmarks, sensitivity):
 
 # for stop predict
 def stop_predict_check_moving(result, img, point_history, point_history_classifier, finger_gesture_history, point_history_classifier_labels, landmark_number, sensitivity):
+    '''
+    sensitivity = 0.75  : 75%
+    sensitivity = 1     : original
+    sensitivity = 2     : 200%
+    '''
     history_length = 16
     for hand_landmarks, handedness in zip(result.multi_hand_landmarks, result.multi_handedness):
         landmark_list = calc_landmark_list_xy(img, hand_landmarks, sensitivity)
