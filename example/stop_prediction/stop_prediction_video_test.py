@@ -220,19 +220,13 @@ def main(mode, mode_count, button_overlay, delete_count, delete_button_overlay, 
     stop_predict_0_gesture_history = deque(maxlen=history_length)
     stop_predict_0_point_history_classifier = PointHistoryClassifier()
 
-    stop_predict_5_point_history = deque(maxlen=history_length)
-    stop_predict_5_gesture_history = deque(maxlen=history_length)
-    stop_predict_5_point_history_classifier = PointHistoryClassifier()
-
-    stop_predict_17_point_history = deque(maxlen=history_length)
-    stop_predict_17_gesture_history = deque(maxlen=history_length)
-    stop_predict_17_point_history_classifier = PointHistoryClassifier()
+    stop_predict_8_point_history = deque(maxlen=history_length)
+    stop_predict_8_gesture_history = deque(maxlen=history_length)
+    stop_predict_8_point_history_classifier = PointHistoryClassifier()
 
     # stop predict deque  
     motion_0_history = deque(maxlen=3)
-    motion_5_history = deque(maxlen=3)
-    motion_17_history = deque(maxlen=3)
-
+    motion_8_history = deque(maxlen=3)
     
     # Read labels ###########################################################
     with open(
@@ -414,18 +408,18 @@ def main(mode, mode_count, button_overlay, delete_count, delete_button_overlay, 
                     # korean mode
                     if mode == True:
                         # wrist moving check
-                        status, img = check_moving(result, img, point_history, point_history_classifier, finger_gesture_history, point_history_classifier_labels, draw=False)
+                        status, img = check_moving(result, img, point_history, point_history_classifier, finger_gesture_history, point_history_classifier_labels)
                         
-                        stop_predict_status, img = stop_predict_check_moving(result, img, stop_predict_0_point_history, 0, stop_predict_0_point_history_classifier, stop_predict_0_gesture_history, point_history_classifier_labels, draw=False)
+                        stop_predict_status, img = stop_predict_check_moving(result, img, stop_predict_0_point_history, stop_predict_0_point_history_classifier, stop_predict_0_gesture_history, point_history_classifier_labels,
+                                                                             landmark_number= 0, sensitivity = 0.75)
                         motion_0_history.append(stop_predict_status)
-                        stop_predict_status, img = stop_predict_check_moving(result, img, stop_predict_5_point_history, 5, stop_predict_5_point_history_classifier, stop_predict_5_gesture_history, point_history_classifier_labels, draw=False)
-                        motion_5_history.append(stop_predict_status)
-                        stop_predict_status, img = stop_predict_check_moving(result, img, stop_predict_17_point_history, 17, stop_predict_17_point_history_classifier, stop_predict_17_gesture_history, point_history_classifier_labels, draw=False)
-                        motion_17_history.append(stop_predict_status)
+                        stop_predict_status, img = stop_predict_check_moving(result, img, stop_predict_8_point_history, stop_predict_8_point_history_classifier, stop_predict_8_gesture_history, point_history_classifier_labels,
+                                                                             landmark_number= 8, sensitivity = 0.75)
+                        motion_8_history.append(stop_predict_status)
+                        
+                        print(motion_0_history, motion_8_history)
 
-                        # print(motion_0_history, motion_5_history, motion_17_history)
-
-                        if "Move" not in motion_0_history and "Move" not in motion_5_history and "Move" not in motion_17_history:
+                        if "Move" not in motion_0_history and "Move" not in motion_8_history:
                             thumb_index_angle = int(detector.findHandAngle(img, 4, 2, 5, draw=False))
                             wrist_angle, similar_text_res = wrist_angle_calculator(hand_lmlist)
 
@@ -876,13 +870,11 @@ def check_moving(result, img, point_history, point_history_classifier, finger_ge
             finger_gesture_history).most_common()
 
         status = point_history_classifier_labels[most_common_fg_id[0][0]]
-        if draw:
-            img = draw_point_history(img, point_history)
 
         return status, img
 
 # for stop predict
-def calc_landmark_list_xy(image, landmarks):
+def calc_landmark_list_xy(image, landmarks, sensitivity):
     image_width, image_height = image.shape[1], image.shape[0]
 
     landmark_point = []
@@ -891,15 +883,15 @@ def calc_landmark_list_xy(image, landmarks):
     for _, landmark in enumerate(landmarks.landmark):
         landmark_x = min(int(landmark.x * image_width), image_width - 1)
         landmark_y = min(int(landmark.y * image_height), image_height - 1)
-        landmark_point.append([landmark_x / 1.5, landmark_y / 1.5])
+        landmark_point.append([landmark_x * sensitivity, landmark_y * sensitivity])
 
     return landmark_point
 
 # for stop predict
-def stop_predict_check_moving(result, img, point_history, landmark_number, point_history_classifier, finger_gesture_history, point_history_classifier_labels, draw=True):
+def stop_predict_check_moving(result, img, point_history, point_history_classifier, finger_gesture_history, point_history_classifier_labels, landmark_number, sensitivity):
     history_length = 16
     for hand_landmarks, handedness in zip(result.multi_hand_landmarks, result.multi_handedness):
-        landmark_list = calc_landmark_list_xy(img, hand_landmarks)
+        landmark_list = calc_landmark_list_xy(img, hand_landmarks, sensitivity)
 
         pre_processed_landmark_list = pre_process_landmark(
             landmark_list)
@@ -920,8 +912,6 @@ def stop_predict_check_moving(result, img, point_history, landmark_number, point
             finger_gesture_history).most_common()
 
         status = point_history_classifier_labels[most_common_fg_id[0][0]]
-        if draw:
-            img = draw_point_history(img, point_history)
 
         return status, img
 
