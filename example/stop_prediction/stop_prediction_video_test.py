@@ -216,12 +216,22 @@ def main(mode, mode_count, button_overlay, delete_count, delete_button_overlay, 
     point_history_classifier = PointHistoryClassifier()
 
     # stop predict check moving
-    stop_predict_point_history = deque(maxlen=history_length)
-    stop_predict_gesture_history = deque(maxlen=history_length)
-    stop_predict_point_history_classifier = PointHistoryClassifier()
+    stop_predict_0_point_history = deque(maxlen=history_length)
+    stop_predict_0_gesture_history = deque(maxlen=history_length)
+    stop_predict_0_point_history_classifier = PointHistoryClassifier()
+
+    stop_predict_5_point_history = deque(maxlen=history_length)
+    stop_predict_5_gesture_history = deque(maxlen=history_length)
+    stop_predict_5_point_history_classifier = PointHistoryClassifier()
+
+    stop_predict_17_point_history = deque(maxlen=history_length)
+    stop_predict_17_gesture_history = deque(maxlen=history_length)
+    stop_predict_17_point_history_classifier = PointHistoryClassifier()
 
     # stop predict deque  
-    motion_history = deque(maxlen=3)
+    motion_0_history = deque(maxlen=3)
+    motion_5_history = deque(maxlen=3)
+    motion_17_history = deque(maxlen=3)
 
     
     # Read labels ###########################################################
@@ -251,6 +261,8 @@ def main(mode, mode_count, button_overlay, delete_count, delete_button_overlay, 
             if not ret:
                 break
 
+            img = cv2.resize(img, (640, 480))
+
             if this_action not in ['', ' ']:
                 cnt += 1
                 jamo_li.append(this_action)
@@ -267,8 +279,9 @@ def main(mode, mode_count, button_overlay, delete_count, delete_button_overlay, 
                     jamo_dict = Counter(jamo_dict).most_common()
                     print("jamo_dict", jamo_dict)
                     if jamo_dict and jamo_dict[0][1]: # >= int(status_cnt_conf*0.7):
-                        print("tmp", tmp)
+                        # print("tmp", tmp)
                         tmp = jamo_dict[0][0]
+                        motion_0_history.append("Move")
                         status_lst_slice = list(deque(itertools.islice(status_lst, int(status_cnt_conf*0.5), status_cnt_conf-1)))
                         # print("status_lst_slice", status_lst_slice)
                         # print("tmp", tmp)
@@ -279,13 +292,14 @@ def main(mode, mode_count, button_overlay, delete_count, delete_button_overlay, 
                                 else:
                                     jamo_join_li.append('ㅅ')
                             else:
-                                if jamo_join_li[-1] in J:
-                                    jamo_join_li.append('ㅠ')
-                                else:
-                                    if 'Move' in status_lst_slice: 
-                                        jamo_join_li.append('ㅆ')
+                                if len(jamo_join_li) != 0:
+                                    if jamo_join_li[-1] in J:
+                                        jamo_join_li.append('ㅠ')
                                     else:
-                                        jamo_join_li.append('ㅅ')
+                                        if 'Move' in status_lst_slice: 
+                                            jamo_join_li.append('ㅆ')
+                                        else:
+                                            jamo_join_li.append('ㅅ')
                         elif tmp in J:
                             if tmp in JJ_dict.keys():
                                 # 쌍자음
@@ -346,7 +360,7 @@ def main(mode, mode_count, button_overlay, delete_count, delete_button_overlay, 
                                     jamo_join_li.append(i)
                     jamo_li = deque()
                     cnt = 0
-                    
+                
 
             h, w, c = img.shape
 
@@ -355,9 +369,7 @@ def main(mode, mode_count, button_overlay, delete_count, delete_button_overlay, 
             hand_lmlist, _ = detector.findPosition(img, draw=False)
 
             if result.multi_hand_landmarks is not None:
-                hand_angle = int(detector.findWholeHandAngle(img, 0, 9, draw=False))
                 x1, y1 = hand_lmlist[8][1:3]
-                thumb_index_angle = int(detector.findHandAngle(img, 4, 2, 5, draw=False))
                 # change mode button
                 if mode == True:
                     if 25 < x1 < 100 and 125 < y1 < 200:
@@ -404,11 +416,16 @@ def main(mode, mode_count, button_overlay, delete_count, delete_button_overlay, 
                         # wrist moving check
                         status, img = check_moving(result, img, point_history, point_history_classifier, finger_gesture_history, point_history_classifier_labels, draw=False)
                         
-                        stop_predict_status, img = stop_predict_check_moving(result, img, stop_predict_point_history, stop_predict_point_history_classifier, stop_predict_gesture_history, point_history_classifier_labels, draw=False)
-                        motion_history.append(stop_predict_status)
-                        # print("motion_history", motion_history)
+                        stop_predict_status, img = stop_predict_check_moving(result, img, stop_predict_0_point_history, 0, stop_predict_0_point_history_classifier, stop_predict_0_gesture_history, point_history_classifier_labels, draw=False)
+                        motion_0_history.append(stop_predict_status)
+                        stop_predict_status, img = stop_predict_check_moving(result, img, stop_predict_5_point_history, 5, stop_predict_5_point_history_classifier, stop_predict_5_gesture_history, point_history_classifier_labels, draw=False)
+                        motion_5_history.append(stop_predict_status)
+                        stop_predict_status, img = stop_predict_check_moving(result, img, stop_predict_17_point_history, 17, stop_predict_17_point_history_classifier, stop_predict_17_gesture_history, point_history_classifier_labels, draw=False)
+                        motion_17_history.append(stop_predict_status)
 
-                        if "Move" not in motion_history:
+                        # print(motion_0_history, motion_5_history, motion_17_history)
+
+                        if "Move" not in motion_0_history and "Move" not in motion_5_history and "Move" not in motion_17_history:
                             thumb_index_angle = int(detector.findHandAngle(img, 4, 2, 5, draw=False))
                             wrist_angle, similar_text_res = wrist_angle_calculator(hand_lmlist)
 
@@ -874,12 +891,12 @@ def calc_landmark_list_xy(image, landmarks):
     for _, landmark in enumerate(landmarks.landmark):
         landmark_x = min(int(landmark.x * image_width), image_width - 1)
         landmark_y = min(int(landmark.y * image_height), image_height - 1)
-        landmark_point.append([landmark_x / 2, landmark_y / 2])
+        landmark_point.append([landmark_x / 1.5, landmark_y / 1.5])
 
     return landmark_point
 
 # for stop predict
-def stop_predict_check_moving(result, img, point_history, point_history_classifier, finger_gesture_history, point_history_classifier_labels, draw=True):
+def stop_predict_check_moving(result, img, point_history, landmark_number, point_history_classifier, finger_gesture_history, point_history_classifier_labels, draw=True):
     history_length = 16
     for hand_landmarks, handedness in zip(result.multi_hand_landmarks, result.multi_handedness):
         landmark_list = calc_landmark_list_xy(img, hand_landmarks)
@@ -889,7 +906,7 @@ def stop_predict_check_moving(result, img, point_history, point_history_classifi
         pre_processed_point_history_list = pre_process_point_history(
             img, point_history)
 
-        point_history.append(landmark_list[0])
+        point_history.append(landmark_list[landmark_number])
 
         finger_gesture_id = 0
         point_history_len = len(pre_processed_point_history_list)
