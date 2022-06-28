@@ -23,8 +23,9 @@
 
 ## 기업 프로젝트 성과 발표
 <hr>
-### 광주인공지능사관학교 졸업식
 
+#### 광주인공지능사관학교 졸업식 발표 영상
+#### 이미지를 클릭하면 유튜브 영상이 나옵니다.
 [![Video Label](https://user-images.githubusercontent.com/82289435/176122132-5350eab2-2edd-4ac0-80c2-0581d7ba9228.png)](https://www.youtube.com/watch?v=vyCmKMl3398&t=5975s)
 
 
