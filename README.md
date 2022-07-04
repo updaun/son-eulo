@@ -28,6 +28,26 @@
 #### 이미지를 클릭하면 유튜브 영상이 나옵니다.
 [![Video Label](https://user-images.githubusercontent.com/82289435/176122132-5350eab2-2edd-4ac0-80c2-0581d7ba9228.png)](https://www.youtube.com/watch?v=vyCmKMl3398&t=5975s)
 
+## 시연 영상
+<hr>
+
+### 🚩 주소입력 (첨단과기로339)
+
+![test1](https://user-images.githubusercontent.com/82289435/177174951-a2794feb-9e2d-4456-bb9e-31415ee4d51f.gif)
+
+### 🎓 교장샘 싸랑해요 💖
+
+![user_test_daun](https://user-images.githubusercontent.com/82289435/177180598-ed120ae0-6925-45b0-a847-0f0ff8586e4e.gif)
+
+### ☕ 아메리카노
+
+![test3](https://user-images.githubusercontent.com/82289435/177180314-f407150c-fd18-4359-88c0-1bfcb5709090.gif)
+
+### 🥃 카페라떼 
+
+![test4](https://user-images.githubusercontent.com/82289435/177180415-7e6db02d-66a3-4fad-b9f4-9ef2cbb9e34a.gif)
+
+
 
 ## Directory Structure
 
@@ -81,7 +101,7 @@
 └── └── HolisticModule.py
 ```
 
-## Development Environment
+## Get Started
 ```
 python 3.8
 ```
@@ -89,3 +109,30 @@ python 3.8
 ```
 pip install -r requirements.txt
 ```
+
+```
+python son-eulo_app.py
+```
+
+## 시연 영상(숫자)
+<hr>
+
+### 숫자 0~5
+
+![1to5](https://user-images.githubusercontent.com/82289435/177180854-cec0a51d-c841-4354-847c-e1f6ee809324.gif)
+
+### 숫자 6~10
+
+![6to10](https://user-images.githubusercontent.com/82289435/177180927-861dbb07-5b98-4747-a2e5-39b6db7f615c.gif)
+
+### 숫자 11~12
+
+![11to12](https://user-images.githubusercontent.com/82289435/177180964-b59138e6-d543-494b-906b-e1a870ae8f37.gif)
+
+### 숫자 13~16
+
+![13to16](https://user-images.githubusercontent.com/82289435/177181012-6a9d8566-2274-4878-96cd-1747ecb2a834.gif)
+
+### 숫자 17~20
+
+![17to20](https://user-images.githubusercontent.com/82289435/177181081-d096b68b-fc5a-42ff-858c-22c908d18fa2.gif)
